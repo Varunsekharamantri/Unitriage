@@ -15,3 +15,6 @@ evals/images/
 
 # local tooling
 .claude/
+
+# generated demo video
+video/
