@@ -41,26 +41,43 @@ def create_app(
 
     @asynccontextmanager
     async def lifespan(app: FastAPI):
-        conn = None
+        conn = pool = db = None
+        # Postgres (Neon) when DATABASE_URL is set and no test workflow was injected: ticket state,
+        # chat messages and photos then survive restarts. Otherwise SQLite and memory, as before.
+        if workflow is None and config.DATABASE_URL:
+            from langgraph.checkpoint.postgres import PostgresSaver
+
+            from app.core.db import Database, open_pool
+
+            pool = open_pool(config.DATABASE_URL)
+            db = Database(pool)
+            db.ensure_schema()
         app.state.vault = vault or demo_vault()
         app.state.usage = usage or UsageTracker()
-        app.state.notifier = notifier or MockNotifier()
-        app.state.photos = PhotoCache()
+        app.state.notifier = notifier or MockNotifier(store=db)
+        app.state.photos = PhotoCache(db=db)
         if workflow is None:
-            checkpointer = get_sqlite_checkpointer(config.CHECKPOINT_DB_PATH)
-            conn = checkpointer.conn
+            if pool is not None:
+                checkpointer = PostgresSaver(pool)
+                checkpointer.setup()
+            else:
+                checkpointer = get_sqlite_checkpointer(config.CHECKPOINT_DB_PATH)
+                conn = checkpointer.conn
             app.state.workflow = build_workflow(
                 build_default_service(tracker=app.state.usage),
                 app.state.notifier,
                 app.state.vault,
                 checkpointer,
                 build_summarizer(config.SUMMARY_MODE),
+                clear_image=db is not None,
             )
         else:
             app.state.workflow = workflow
         yield
         if conn is not None:
             conn.close()
+        if pool is not None:
+            pool.close()
 
     app = FastAPI(title="Unitriage.AI", lifespan=lifespan)
     app.include_router(router)

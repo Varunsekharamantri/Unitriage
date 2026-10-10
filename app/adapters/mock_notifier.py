@@ -1,9 +1,12 @@
+import logging
 import threading
 from dataclasses import asdict, dataclass, field
 from datetime import datetime, timezone
 from typing import Dict, List, Optional
 
 from app.adapters.base import TECHNICIAN_CHAT, Action, Attachment, Notifier
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass
@@ -27,8 +30,16 @@ class MockNotifier(Notifier):
     messages here too, so every conversation can be replayed from one place.
     """
 
-    def __init__(self, echo: bool = True):
+    def __init__(self, echo: bool = True, store=None):
+        """store: optional object with load_messages() and add_message(dict), e.g. app.core.db.Database,
+        so the conversation survives a restart."""
+        self._store = store
         self.sent: List[SentMessage] = []
+        if store is not None:
+            self.sent = [
+                SentMessage(**{**row, "actions": list(row["actions"]), "attachments": list(row["attachments"])})
+                for row in store.load_messages()
+            ]
         self._echo = echo
         self._lock = threading.Lock()
 
@@ -59,6 +70,11 @@ class MockNotifier(Notifier):
                 attachments=list(attachments or []),
             )
             self.sent.append(msg)
+            if self._store is not None:
+                try:
+                    self._store.add_message(asdict(msg))
+                except Exception:  # a storage hiccup must not stop a notification
+                    logger.exception("could not save message %s", msg.id)
         if self._echo:
             print(f"\n[{sender.upper()} -> {recipient.upper()}] {subject}\n{body}\n")
 

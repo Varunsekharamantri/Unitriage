@@ -24,8 +24,9 @@ def build_workflow(
     vault: MockVault,
     checkpointer: SqliteSaver,
     summarizer=None,
+    clear_image: bool = False,
 ):
-    n = TriageNodes(vision, notifier, vault, summarizer)
+    n = TriageNodes(vision, notifier, vault, summarizer, clear_image)
     g = StateGraph(TicketState)
 
     g.add_node("triage", n.triage)

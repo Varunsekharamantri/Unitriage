@@ -56,6 +56,18 @@ On the tenant phone there is no unit picker: the assistant asks which room or un
 
 Notifications go to a mock notifier (terminal / demo inbox). No real messages are sent.
 
+## Where data is stored
+
+| `DATABASE_URL` | Ticket state | Chat messages | Photos |
+| --- | --- | --- | --- |
+| set (Neon or any Postgres) | Postgres (LangGraph checkpointer) | `messages` table | `photos` table |
+| empty | `checkpoints.sqlite` | memory (lost on restart) | memory + the ticket state |
+
+Use the **direct** connection string (not the pooled `-pooler` one). Tables are created on
+startup. With Postgres the photo is kept in the `photos` table and removed from the ticket state
+after triage, so checkpoints stay small. Neon's free tier pauses idle databases, so the first
+request after a quiet period can take a couple of seconds.
+
 ## How work is spread across AI providers
 
 Each job has its own preferred order, so no single free tier carries everything:

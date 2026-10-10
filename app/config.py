@@ -57,6 +57,9 @@ NOTE_HAZARD_THRESHOLD: float = float(os.getenv("NOTE_HAZARD_THRESHOLD", "0.5"))
 # Only used by evals/fetch_photos.py, to find reference photos for the evaluation set.
 UNSPLASH_ACCESS_KEY: str = os.getenv("UNSPLASH_ACCESS_KEY", "")
 
+# Postgres (Neon etc.). When set it holds ticket state, chat messages and photos, so they survive
+# restarts and redeploys. When empty, SQLite plus in-memory stores are used (fine locally).
+DATABASE_URL: str = os.getenv("DATABASE_URL", "")
 CHECKPOINT_DB_PATH: str = os.getenv("CHECKPOINT_DB_PATH", "checkpoints.sqlite")
 CONFIDENCE_THRESHOLD: float = float(os.getenv("CONFIDENCE_THRESHOLD", "0.75"))
 VISION_RETRIES_PER_PROVIDER: int = int(os.getenv("VISION_RETRIES_PER_PROVIDER", "2"))

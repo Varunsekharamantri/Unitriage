@@ -92,7 +92,12 @@ def _tenant(state: TicketState) -> str:
 
 
 class TriageNodes:
-    def __init__(self, vision: VisionService, notifier: Notifier, vault: MockVault, summarizer=None):
+    def __init__(
+        self, vision: VisionService, notifier: Notifier, vault: MockVault, summarizer=None, clear_image: bool = False
+    ):
+        # clear_image: the photo is saved elsewhere (the database), so don't carry it in every
+        # checkpoint of the ticket after triage has looked at it.
+        self._clear_image = clear_image
         self._summarizer = summarizer  # writes the owner's plain-language summary; None = template
         self._vision = vision
         self._notifier = notifier
@@ -141,6 +146,7 @@ class TriageNodes:
                 "note_flags": found.flags,
                 "note_urgency": found.urgency,
                 "note_vulnerable": found.vulnerable,
+                **self._image_update(),
             }
         return {
             "assessment": assessment.model_dump(),
@@ -148,7 +154,12 @@ class TriageNodes:
             "note_flags": assessment.note_flags,
             "note_urgency": assessment.note_urgency,
             "note_vulnerable": assessment.note_vulnerable,
+            **self._image_update(),
         }
+
+    def _image_update(self) -> dict:
+        """Empty the photo out of the ticket state when it is kept in the database instead."""
+        return {"image_b64": ""} if self._clear_image else {}
 
     def manual_review(self, state: TicketState) -> dict:
         flags = state.get("note_flags") or []

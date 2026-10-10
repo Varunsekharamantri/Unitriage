@@ -136,7 +136,7 @@ def ticket_photo(request: Request, ticket_id: str, token: str = Query(...)):
         content, media_type = cached
     else:  # e.g. after a restart: the photo is still in the ticket's checkpoint
         snap = request.app.state.workflow.get_state(_config(ticket_id))
-        if not snap.values or "image_b64" not in snap.values:
+        if not snap.values or not snap.values.get("image_b64"):
             raise HTTPException(404, f"Unknown ticket {ticket_id!r}")
         content = base64.b64decode(snap.values["image_b64"])
         media_type = snap.values.get("image_mime", "image/jpeg")
