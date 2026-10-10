@@ -49,3 +49,18 @@ def test_photos_fall_back_to_the_database_after_a_restart():
     assert PhotoCache(db=db).get("T-1") == (b"bytes", "image/png")
     assert PhotoCache(db=db).get("T-2") is None
     assert PhotoCache().get("T-1") is None  # without a database it is memory only, as before
+
+
+def test_a_console_that_cannot_show_emoji_does_not_break_a_send(monkeypatch):
+    import builtins
+
+    real_print = builtins.print
+
+    def narrow_print(text="", *a, **k):
+        text.encode("cp1252")  # what a Windows console does: raises on an emoji
+        real_print(text, *a, **k)
+
+    monkeypatch.setattr(builtins, "print", narrow_print)
+    n = MockNotifier(echo=True)
+    n.send("tenant", "Done", "\u2705 It's fixed, thanks!")
+    assert len(n.sent) == 1 and "\u2705" in n.sent[0].body  # the real message keeps its emoji

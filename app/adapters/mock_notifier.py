@@ -76,7 +76,11 @@ class MockNotifier(Notifier):
                 except Exception:  # a storage hiccup must not stop a notification
                     logger.exception("could not save message %s", msg.id)
         if self._echo:
-            print(f"\n[{sender.upper()} -> {recipient.upper()}] {subject}\n{body}\n")
+            line = f"\n[{sender.upper()} -> {recipient.upper()}] {subject}\n{body}\n"
+            try:
+                print(line)
+            except UnicodeEncodeError:  # a console that can't show emoji must never break a ticket
+                print(line.encode("ascii", "replace").decode("ascii"))
 
     def to(self, recipient: str) -> List[SentMessage]:
         return [m for m in self.sent if m.recipient == recipient]
