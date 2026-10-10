@@ -1,0 +1,27 @@
+# Render Blueprint: New > Blueprint > pick this repo. Secrets marked sync:false are asked for
+# in the dashboard on first deploy; they are never stored in git.
+services:
+  - type: web
+    name: unitriage
+    runtime: python
+    plan: free
+    region: oregon          # keep this close to your Neon region
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.api.main:app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /healthz
+    autoDeploy: true
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.7
+      - key: DEMO_UI          # the phone simulator at / ; it shows every message, so demo data only
+        value: "true"
+      - key: DATABASE_URL     # Neon direct (non-pooled) connection string
+        sync: false
+      - key: GEMINI_API_KEY
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: OPENROUTER_API_KEY
+        sync: false
+      - key: VAULT_SECRET     # signs approval and photo links; Render makes a random one
+        generateValue: true

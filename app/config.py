@@ -64,7 +64,11 @@ CHECKPOINT_DB_PATH: str = os.getenv("CHECKPOINT_DB_PATH", "checkpoints.sqlite")
 CONFIDENCE_THRESHOLD: float = float(os.getenv("CONFIDENCE_THRESHOLD", "0.75"))
 VISION_RETRIES_PER_PROVIDER: int = int(os.getenv("VISION_RETRIES_PER_PROVIDER", "2"))
 VAULT_SECRET: str = os.getenv("VAULT_SECRET", "dev-only-secret")
-PUBLIC_BASE_URL: str = os.getenv("PUBLIC_BASE_URL", "http://localhost:8000").rstrip("/")
+# The address links in messages (approvals, photos) point to. On Render it is filled in
+# automatically from RENDER_EXTERNAL_URL; set PUBLIC_BASE_URL yourself for a custom domain.
+PUBLIC_BASE_URL: str = (
+    os.getenv("PUBLIC_BASE_URL") or os.getenv("RENDER_EXTERNAL_URL") or "http://localhost:8000"
+).rstrip("/")
 # Chat simulator at "/" plus a feed of every message sent to tenant/technician/manager,
 # including the dispatch message that carries the access code. Local demos only:
 # set DEMO_UI=false for anything reachable by other people.

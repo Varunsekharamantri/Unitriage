@@ -82,6 +82,10 @@ def create_app(
     app = FastAPI(title="Unitriage.AI", lifespan=lifespan)
     app.include_router(router)
 
+    @app.get("/healthz", include_in_schema=False)
+    def healthz():
+        return {"status": "ok"}  # for the host's health check: no database or AI call
+
     if config.DEMO_UI:
         app.include_router(demo.router)
 

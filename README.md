@@ -89,6 +89,19 @@ The approval card the owner sees has a short plain-language summary written by a
 not to recommend approving or rejecting. The quote and ETA are printed by the app, never by the AI.
 If no AI answers, the card falls back to the fixed template. `SUMMARY_MODE=off` disables it.
 
+## Deploy on Render
+
+1. Push this repo to GitHub, then in Render choose **New > Blueprint** and pick it. `render.yaml`
+   defines the service (start command, health check at `/healthz`, Python 3.12).
+2. When asked, fill in the secrets: `DATABASE_URL` (Neon, direct connection) and
+   `GEMINI_API_KEY` / `GROQ_API_KEY` / `OPENROUTER_API_KEY`. `VAULT_SECRET` is generated for you.
+3. Links in messages use the service's own address automatically (`RENDER_EXTERNAL_URL`); set
+   `PUBLIC_BASE_URL` only for a custom domain.
+
+`DEMO_UI=true` serves the phone simulator and a feed of every message, including dispatch
+messages with access codes, to anyone with the URL. Keep it for demo data only. Free web services
+sleep after about 15 minutes idle, and the first request after that takes around a minute.
+
 ## Test and evaluate
 
 ```bash
