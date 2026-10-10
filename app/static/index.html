@@ -1,0 +1,602 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Unitriage Chat</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💬</text></svg>">
+<style>
+  :root {
+    --bg: #d1d7db; --panel: #ffffff; --header: #f0f2f5; --wallpaper: #efeae2;
+    --in: #ffffff; --out: #d9fdd3; --green: #00a884; --text: #111b21; --muted: #667781;
+    --line: #e9edef; --hover: #f5f6f6; --active: #f0f2f5; --system: #fff5c4; --system-text: #54656f;
+    --danger: #ea0038; --wa: #1daa61; --search: #f0f2f5; --chipline: #d3d8db; --chipon: #d8fdd2; --chiptext: #0b141a; --shadow: 0 1px .5px rgba(11,20,26,.13); --dot: rgba(11,20,26,.045);
+    --doodle: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22380%22 height=%22380%22 viewBox=%220 0 380 380%22%3E%3Cg fill=%22none%22 stroke=%22%23d8cfc2%22 stroke-width=%221.7%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cg transform=%22translate%2850 50%29 rotate%28-15%29 scale%28.9%29%22%3E%3Cpath d=%22M0-13C7-3 9 3 0 11C-9 3-7-3 0-13Z%22/%3E%3Cpath d=%22M-3 4a4 4 0 0 0 3 3%22/%3E%3C/g%3E%3Cg transform=%22translate%28150 40%29 rotate%2820%29 scale%28.9%29%22%3E%3Cpath d=%22M9-12a7 7 0 0 0-8 9L-12 9a3 3 0 0 0 4 4L3 2a7 7 0 0 0 9-8l-5 4-4-1-1-4z%22/%3E%3C/g%3E%3Cg transform=%22translate%28255 55%29 rotate%280%29 scale%28.9%29%22%3E%3Cpath d=%22M-6 6a9 9 0 1 1 12 0c-2 2-2 3-2 5h-8c0-2 0-3-2-5z%22/%3E%3Cpath d=%22M-4 15h8M-2 18h4%22/%3E%3C/g%3E%3Cg transform=%22translate%28335 45%29 rotate%28-8%29 scale%28.9%29%22%3E%3Cpath d=%22M-13 0L0-12 13 0M-9-3V12h18V-3%22/%3E%3Cpath d=%22M-3 12V4h6v8%22/%3E%3C/g%3E%3Cg transform=%22translate%28100 110%29 rotate%280%29 scale%28.9%29%22%3E%3Cpath d=%22M0-8C1-2 2-1 8 0 2 1 1 2 0 8-1 2-2 1-8 0-2-1-1-2 0-8z%22/%3E%3C/g%3E%3Cg transform=%22translate%28200 118%29 rotate%280%29 scale%28.9%29%22%3E%3Ccircle r=%225%22/%3E%3Ccircle cx=%2212%22 cy=%22-9%22 r=%222.5%22/%3E%3Ccircle cx=%22-11%22 cy=%2210%22 r=%223%22/%3E%3C/g%3E%3Cg transform=%22translate%28300 120%29 rotate%2825%29 scale%28.9%29%22%3E%3Ccircle cx=%22-7%22 cy=%22-5%22 r=%226%22/%3E%3Cpath d=%22M-3-1L12 14M7 9l4-4M10 12l3-3%22/%3E%3C/g%3E%3Cg transform=%22translate%2845 180%29 rotate%2815%29 scale%28.9%29%22%3E%3Cpath d=%22M-6-14v8M6-14v8M-10-6h20v7a10 10 0 0 1-20 0zM0 11v6%22/%3E%3C/g%3E%3Cg transform=%22translate%28145 185%29 rotate%28-20%29 scale%28.9%29%22%3E%3Cpath d=%22M-12-9h14l3 4-3 4h-14zM-2 3v15%22/%3E%3C/g%3E%3Cg transform=%22translate%28235 185%29 rotate%280%29 scale%28.9%29%22%3E%3Cpath d=%22M-12 0h8M2 0h10%22/%3E%3C/g%3E%3Cg transform=%22translate%28330 195%29 rotate%2810%29 scale%28.9%29%22%3E%3Cpath d=%22M-10 10C-12-6 0-13 12-12 13 0 6 12-10 10zM-10 10L4-4%22/%3E%3C/g%3E%3Cg transform=%22translate%2860 260%29 rotate%28-10%29 scale%28.9%29%22%3E%3Crect x=%22-13%22 y=%22-12%22 width=%2222%22 height=%229%22 rx=%222%22/%3E%3Cpath d=%22M9-8h5v7H0v6M-3 5h6v13h-6z%22/%3E%3C/g%3E%3Cg transform=%22translate%28160 255%29 rotate%2825%29 scale%28.9%29%22%3E%3Cpath d=%22M0-13C7-3 9 3 0 11C-9 3-7-3 0-13Z%22/%3E%3Cpath d=%22M-3 4a4 4 0 0 0 3 3%22/%3E%3C/g%3E%3Cg transform=%22translate%28250 250%29 rotate%280%29 scale%28.9%29%22%3E%3Cpath d=%22M0-8C1-2 2-1 8 0 2 1 1 2 0 8-1 2-2 1-8 0-2-1-1-2 0-8z%22/%3E%3C/g%3E%3Cg transform=%22translate%28335 270%29 rotate%2815%29 scale%28.9%29%22%3E%3Cpath d=%22M-6 6a9 9 0 1 1 12 0c-2 2-2 3-2 5h-8c0-2 0-3-2-5z%22/%3E%3Cpath d=%22M-4 15h8M-2 18h4%22/%3E%3C/g%3E%3Cg transform=%22translate%2840 335%29 rotate%28-35%29 scale%28.9%29%22%3E%3Cpath d=%22M9-12a7 7 0 0 0-8 9L-12 9a3 3 0 0 0 4 4L3 2a7 7 0 0 0 9-8l-5 4-4-1-1-4z%22/%3E%3C/g%3E%3Cg transform=%22translate%28130 330%29 rotate%2810%29 scale%28.9%29%22%3E%3Cpath d=%22M-13 0L0-12 13 0M-9-3V12h18V-3%22/%3E%3Cpath d=%22M-3 12V4h6v8%22/%3E%3C/g%3E%3Cg transform=%22translate%28215 335%29 rotate%280%29 scale%28.9%29%22%3E%3Ccircle r=%225%22/%3E%3Ccircle cx=%2212%22 cy=%22-9%22 r=%222.5%22/%3E%3Ccircle cx=%22-11%22 cy=%2210%22 r=%223%22/%3E%3C/g%3E%3Cg transform=%22translate%28300 330%29 rotate%28-20%29 scale%28.9%29%22%3E%3Ccircle cx=%22-7%22 cy=%22-5%22 r=%226%22/%3E%3Cpath d=%22M-3-1L12 14M7 9l4-4M10 12l3-3%22/%3E%3C/g%3E%3Cg transform=%22translate%28355 330%29 rotate%280%29 scale%28.9%29%22%3E%3Cpath d=%22M-12 0h8M2 0h10%22/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #0c1317; --panel: #111b21; --header: #202c33; --wallpaper: #0b141a;
+      --in: #202c33; --out: #005c4b; --green: #00a884; --text: #e9edef; --muted: #8696a0;
+      --line: #222d34; --hover: #202c33; --active: #2a3942; --system: #182229; --system-text: #8696a0;
+      --danger: #f15c6d; --wa: #21c063; --search: #202c33; --chipline: #2f3b43; --chipon: #103529; --chiptext: #e9edef; --shadow: 0 1px .5px rgba(11,20,26,.4); --dot: rgba(255,255,255,.03);
+      --doodle: url("data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22380%22 height=%22380%22 viewBox=%220 0 380 380%22%3E%3Cg fill=%22none%22 stroke=%22%2318262d%22 stroke-width=%221.7%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Cg transform=%22translate%2850 50%29 rotate%28-15%29 scale%28.9%29%22%3E%3Cpath d=%22M0-13C7-3 9 3 0 11C-9 3-7-3 0-13Z%22/%3E%3Cpath d=%22M-3 4a4 4 0 0 0 3 3%22/%3E%3C/g%3E%3Cg transform=%22translate%28150 40%29 rotate%2820%29 scale%28.9%29%22%3E%3Cpath d=%22M9-12a7 7 0 0 0-8 9L-12 9a3 3 0 0 0 4 4L3 2a7 7 0 0 0 9-8l-5 4-4-1-1-4z%22/%3E%3C/g%3E%3Cg transform=%22translate%28255 55%29 rotate%280%29 scale%28.9%29%22%3E%3Cpath d=%22M-6 6a9 9 0 1 1 12 0c-2 2-2 3-2 5h-8c0-2 0-3-2-5z%22/%3E%3Cpath d=%22M-4 15h8M-2 18h4%22/%3E%3C/g%3E%3Cg transform=%22translate%28335 45%29 rotate%28-8%29 scale%28.9%29%22%3E%3Cpath d=%22M-13 0L0-12 13 0M-9-3V12h18V-3%22/%3E%3Cpath d=%22M-3 12V4h6v8%22/%3E%3C/g%3E%3Cg transform=%22translate%28100 110%29 rotate%280%29 scale%28.9%29%22%3E%3Cpath d=%22M0-8C1-2 2-1 8 0 2 1 1 2 0 8-1 2-2 1-8 0-2-1-1-2 0-8z%22/%3E%3C/g%3E%3Cg transform=%22translate%28200 118%29 rotate%280%29 scale%28.9%29%22%3E%3Ccircle r=%225%22/%3E%3Ccircle cx=%2212%22 cy=%22-9%22 r=%222.5%22/%3E%3Ccircle cx=%22-11%22 cy=%2210%22 r=%223%22/%3E%3C/g%3E%3Cg transform=%22translate%28300 120%29 rotate%2825%29 scale%28.9%29%22%3E%3Ccircle cx=%22-7%22 cy=%22-5%22 r=%226%22/%3E%3Cpath d=%22M-3-1L12 14M7 9l4-4M10 12l3-3%22/%3E%3C/g%3E%3Cg transform=%22translate%2845 180%29 rotate%2815%29 scale%28.9%29%22%3E%3Cpath d=%22M-6-14v8M6-14v8M-10-6h20v7a10 10 0 0 1-20 0zM0 11v6%22/%3E%3C/g%3E%3Cg transform=%22translate%28145 185%29 rotate%28-20%29 scale%28.9%29%22%3E%3Cpath d=%22M-12-9h14l3 4-3 4h-14zM-2 3v15%22/%3E%3C/g%3E%3Cg transform=%22translate%28235 185%29 rotate%280%29 scale%28.9%29%22%3E%3Cpath d=%22M-12 0h8M2 0h10%22/%3E%3C/g%3E%3Cg transform=%22translate%28330 195%29 rotate%2810%29 scale%28.9%29%22%3E%3Cpath d=%22M-10 10C-12-6 0-13 12-12 13 0 6 12-10 10zM-10 10L4-4%22/%3E%3C/g%3E%3Cg transform=%22translate%2860 260%29 rotate%28-10%29 scale%28.9%29%22%3E%3Crect x=%22-13%22 y=%22-12%22 width=%2222%22 height=%229%22 rx=%222%22/%3E%3Cpath d=%22M9-8h5v7H0v6M-3 5h6v13h-6z%22/%3E%3C/g%3E%3Cg transform=%22translate%28160 255%29 rotate%2825%29 scale%28.9%29%22%3E%3Cpath d=%22M0-13C7-3 9 3 0 11C-9 3-7-3 0-13Z%22/%3E%3Cpath d=%22M-3 4a4 4 0 0 0 3 3%22/%3E%3C/g%3E%3Cg transform=%22translate%28250 250%29 rotate%280%29 scale%28.9%29%22%3E%3Cpath d=%22M0-8C1-2 2-1 8 0 2 1 1 2 0 8-1 2-2 1-8 0-2-1-1-2 0-8z%22/%3E%3C/g%3E%3Cg transform=%22translate%28335 270%29 rotate%2815%29 scale%28.9%29%22%3E%3Cpath d=%22M-6 6a9 9 0 1 1 12 0c-2 2-2 3-2 5h-8c0-2 0-3-2-5z%22/%3E%3Cpath d=%22M-4 15h8M-2 18h4%22/%3E%3C/g%3E%3Cg transform=%22translate%2840 335%29 rotate%28-35%29 scale%28.9%29%22%3E%3Cpath d=%22M9-12a7 7 0 0 0-8 9L-12 9a3 3 0 0 0 4 4L3 2a7 7 0 0 0 9-8l-5 4-4-1-1-4z%22/%3E%3C/g%3E%3Cg transform=%22translate%28130 330%29 rotate%2810%29 scale%28.9%29%22%3E%3Cpath d=%22M-13 0L0-12 13 0M-9-3V12h18V-3%22/%3E%3Cpath d=%22M-3 12V4h6v8%22/%3E%3C/g%3E%3Cg transform=%22translate%28215 335%29 rotate%280%29 scale%28.9%29%22%3E%3Ccircle r=%225%22/%3E%3Ccircle cx=%2212%22 cy=%22-9%22 r=%222.5%22/%3E%3Ccircle cx=%22-11%22 cy=%2210%22 r=%223%22/%3E%3C/g%3E%3Cg transform=%22translate%28300 330%29 rotate%28-20%29 scale%28.9%29%22%3E%3Ccircle cx=%22-7%22 cy=%22-5%22 r=%226%22/%3E%3Cpath d=%22M-3-1L12 14M7 9l4-4M10 12l3-3%22/%3E%3C/g%3E%3Cg transform=%22translate%28355 330%29 rotate%280%29 scale%28.9%29%22%3E%3Cpath d=%22M-12 0h8M2 0h10%22/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");
+    }
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; }
+  body { background: var(--bg); color: var(--text); font: 14px/1.4 "Segoe UI", system-ui, -apple-system, Helvetica, Arial, sans-serif; }
+  #app { height: 100%; max-width: 1400px; margin: 0 auto; display: flex; background: var(--panel); }
+
+  /* chat list (the property owner's phone) */
+  aside { width: 400px; flex: none; border-right: 1px solid var(--line); display: flex; flex-direction: column; min-width: 0; }
+  aside { background: var(--panel); position: relative; }
+  .top { height: 64px; padding: 0 8px 0 20px; display: flex; align-items: center; gap: 4px; flex: none; }
+  .top h1 { font-size: 26px; margin: 0; flex: 1; font-weight: 700; color: var(--wa); letter-spacing: -.3px; }
+  .top .icon { color: var(--text); }
+  .search { margin: 4px 16px 10px; background: var(--search); border-radius: 26px; height: 52px; padding: 0 18px; display: flex; align-items: center; gap: 14px; flex: none; }
+  .search svg { width: 22px; height: 22px; fill: none; stroke: var(--muted); stroke-width: 2; stroke-linecap: round; flex: none; }
+  .search input { flex: 1; min-width: 0; border: 0; outline: 0; background: none; color: var(--text); font: inherit; font-size: 16px; }
+  .search input::placeholder { color: var(--muted); }
+  .chips { display: flex; gap: 8px; padding: 0 16px 10px; flex: none; overflow-x: auto; }
+  .chip { border: 1px solid var(--chipline); background: none; color: var(--muted); border-radius: 18px; padding: 6px 14px; font: inherit; font-size: 15px; cursor: pointer; white-space: nowrap; }
+  .chip.on { background: var(--chipon); border-color: var(--chipon); color: var(--chiptext); font-weight: 600; }
+  #chats { flex: 1; overflow-y: auto; padding-bottom: 84px; }
+  .chat { display: flex; gap: 16px; padding: 0 16px; align-items: center; height: 76px; cursor: pointer; border: 0; background: none; width: 100%; text-align: left; color: inherit; font: inherit; }
+  .chat:hover { background: var(--hover); }
+  .chat.active { background: var(--active); }
+  .avatar { width: 52px; height: 52px; border-radius: 50%; flex: none; display: grid; place-items: center; font-size: 26px; background: #dfe5e7; color: #fff; }
+  @media (prefers-color-scheme: dark) { .avatar { background: #3b4a54; } }
+  .chat .meta { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 3px; }
+  .row { display: flex; align-items: center; gap: 8px; }
+  .row .name { flex: 1; font-size: 17px; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .row .time { font-size: 12.5px; color: var(--muted); }
+  .row .time.unread { color: var(--wa); font-weight: 600; }
+  .preview { color: var(--muted); font-size: 15px; flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .preview.unread { color: var(--text); }
+  .badge { background: var(--wa); color: #fff; font-size: 12px; font-weight: 600; min-width: 22px; height: 22px; padding: 0 6px; border-radius: 11px; display: grid; place-items: center; }
+  .badge[hidden] { display: none; }
+  .empty { padding: 40px 24px; text-align: center; color: var(--muted); }
+  .fab { position: absolute; right: 18px; bottom: 90px; width: 58px; height: 58px; border-radius: 18px; background: var(--wa); color: #fff;
+    display: grid; place-items: center; box-shadow: 0 3px 8px rgba(11,20,26,.3); pointer-events: none; }
+  .fab svg, .nav svg { width: 26px; height: 26px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+  .nav { display: flex; justify-content: space-around; padding: 10px 4px 12px; background: var(--panel); border-top: 1px solid var(--line); flex: none; }
+  .nav div { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 13px; color: var(--text); min-width: 72px; }
+  .nav .pill { position: relative; width: 58px; height: 32px; border-radius: 16px; display: grid; place-items: center; }
+  .nav .on .pill { background: var(--chipon); }
+  .nav .on { font-weight: 700; }
+  .nav .pill .badge { position: absolute; top: -6px; right: -2px; min-width: 20px; height: 20px; font-size: 11px; }
+
+  /* conversation */
+  main { flex: 1; display: flex; flex-direction: column; min-width: 0; background: var(--wallpaper);
+    background-image: var(--doodle); background-size: 300px 300px; }
+  .head { background: var(--header); height: 59px; padding: 0 16px; display: flex; align-items: center; gap: 14px; flex: none; }
+  .head .avatar { width: 40px; height: 40px; font-size: 20px; }
+  .head .who { flex: 1; min-width: 0; }
+  .head .who .n { font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .head .who .s { font-size: 13px; color: var(--muted); }
+  .head select { background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; font: inherit; }
+  .back { display: none; border: 0; background: none; color: var(--muted); font-size: 24px; cursor: pointer; padding: 4px 8px 4px 0; line-height: 1; }
+  #messages { flex: 1; overflow-y: auto; padding: 18px 8% 12px; display: flex; flex-direction: column; gap: 3px; }
+  .msg { max-width: 65%; padding: 6px 7px 8px 9px; border-radius: 8px; box-shadow: var(--shadow); position: relative; word-wrap: break-word; overflow-wrap: anywhere; }
+  .msg.in { background: var(--in); align-self: flex-start; border-top-left-radius: 0; }
+  .msg.out { background: var(--out); align-self: flex-end; border-top-right-radius: 0; }
+  .msg.sys { border-left: 3px solid var(--green); }
+  .msg .lock { font-size: 11px; color: var(--muted); margin-bottom: 3px; }
+  .msg .subject { font-weight: 600; margin-bottom: 2px; }
+  .msg .text { white-space: pre-wrap; }
+  .msg img { display: block; max-width: 100%; max-height: 300px; border-radius: 6px; margin-bottom: 4px; }
+  .msg .ts { float: right; margin: 6px 0 -4px 12px; font-size: 11px; color: var(--muted); }
+  .msg.out .ts::after { content: " ✓✓"; color: #53bdeb; }
+  .msg.has-actions { padding-bottom: 0; }
+  .actions { margin: 8px -7px 0 -9px; border-top: 1px solid var(--line); display: flex; flex-direction: column; }
+  .actions button { border: 0; background: none; color: #027eb5; font: inherit; font-weight: 500; padding: 10px; cursor: pointer; border-top: 1px solid var(--line); }
+  .actions button:first-child { border-top: 0; }
+  .actions button:hover:not(:disabled) { background: var(--hover); }
+  .actions button:disabled { color: var(--muted); cursor: default; opacity: .7; }
+  .actions button.approve:not(:disabled) { color: var(--green); }
+  .actions button.reject:not(:disabled) { color: var(--danger); }
+  .system { align-self: center; background: var(--system); color: var(--system-text); font-size: 12.5px; padding: 5px 12px; border-radius: 8px; box-shadow: var(--shadow); margin: 8px 0; text-align: center; max-width: 80%; }
+  .system.error { color: var(--danger); }
+  .typing span { display: inline-block; width: 7px; height: 7px; margin: 0 1.5px; border-radius: 50%; background: var(--muted); animation: blink 1.2s infinite; }
+  .typing span:nth-child(2) { animation-delay: .2s; } .typing span:nth-child(3) { animation-delay: .4s; }
+  @keyframes blink { 0%, 60%, 100% { opacity: .25; } 30% { opacity: 1; } }
+
+  /* composer: one rounded white bar, like WhatsApp Web: clip + sticker | field | mic (send arrow once there is something to send) */
+  #composer { background: var(--header); padding: 8px 16px; display: flex; align-items: center; flex: none; }
+  #composer .bar { flex: 1; min-width: 0; display: flex; align-items: center; gap: 6px; background: var(--panel); border-radius: 24px;
+    padding: 6px 12px; box-shadow: var(--shadow); }
+  #composer .field { flex: 1; background: none; color: var(--text); border: 0; outline: 0; padding: 8px 4px; font: inherit; font-size: 15px; min-width: 0; }
+  #composer .field::placeholder { color: var(--muted); }
+  .icon { border: 0; background: none; color: var(--text); cursor: pointer; width: 36px; height: 36px; padding: 0; border-radius: 50%;
+    display: grid; place-items: center; flex: none; }
+  .icon svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+  .icon:hover:not(:disabled) { background: var(--hover); }
+  .icon:disabled { opacity: .45; cursor: default; }
+  .send .arrow { display: none; }
+  .send:not(:disabled) .mic { display: none; }
+  .send:not(:disabled) .arrow { display: block; stroke: var(--green); fill: var(--green); }
+  .send:disabled .mic { display: block; }
+  #preview { background: var(--header); padding: 10px 16px 0; display: none; align-items: flex-end; gap: 12px; flex: none; }
+  #preview.show { display: flex; }
+  #preview img { max-height: 120px; max-width: 60%; border-radius: 8px; box-shadow: var(--shadow); }
+  #preview button { border: 0; background: none; color: var(--muted); cursor: pointer; font: inherit; }
+
+  dialog { border: 0; border-radius: 12px; padding: 20px; background: var(--panel); color: var(--text); width: min(360px, 90vw); box-shadow: 0 10px 40px rgba(0,0,0,.35); }
+  dialog::backdrop { background: rgba(11,20,26,.5); }
+  dialog h2 { margin: 0 0 4px; font-size: 18px; font-weight: 600; }
+  dialog p { margin: 0 0 14px; color: var(--muted); font-size: 13px; }
+  dialog label { display: block; font-size: 12px; color: var(--green); margin: 10px 0 4px; font-weight: 600; }
+  dialog input { width: 100%; border: 0; border-bottom: 2px solid var(--line); background: none; color: var(--text); font: inherit; padding: 6px 0; outline: 0; }
+  dialog input:focus { border-color: var(--green); }
+  dialog .btns { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
+  dialog .btns button { border: 0; border-radius: 18px; padding: 8px 18px; font: inherit; font-weight: 500; cursor: pointer; background: none; color: var(--green); }
+  dialog .btns button.primary { background: var(--green); color: #fff; }
+
+  /* pop-up notification, like a phone's banner: shown when a message lands in a chat that isn't open */
+  #toast { position: fixed; top: 10px; left: 10px; right: 10px; z-index: 20; display: flex; gap: 12px; align-items: center;
+    background: var(--panel); color: var(--text); border-radius: 12px; padding: 10px 14px; cursor: pointer;
+    box-shadow: 0 6px 24px rgba(11,20,26,.35); border-left: 4px solid var(--green);
+    transform: translateY(-140%); opacity: 0; transition: transform .25s ease, opacity .25s ease; pointer-events: none; }
+  #toast.show { transform: none; opacity: 1; pointer-events: auto; }
+  #toast .avatar { width: 38px; height: 38px; font-size: 19px; }
+  #toast .t { min-width: 0; flex: 1; }
+  #toast .t b { display: block; font-size: 14px; }
+  #toast .t span { display: block; color: var(--muted); font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  @media (prefers-reduced-motion: reduce) { #toast { transition: none; } }
+
+  /* tenant and technician phones have one chat, with the owner: no list, no back button */
+  body.single aside { display: none !important; }
+  body.single .back { display: none !important; }
+  /* the owner's phone with no chat open (wide screens): nothing to type into yet */
+  body.nochat .head, body.nochat #composer, body.nochat #preview { display: none !important; }
+
+  /* narrow screens (and every phone frame on the demo page): one pane at a time */
+  @media (max-width: 760px) {
+    aside { width: 100%; border-right: 0; }
+    body.owner main { display: none; }
+    body.owner.chat-open aside { display: none; }
+    body.owner.chat-open main { display: flex; }
+    body.owner .back { display: block; }
+    #messages { padding: 12px 10px; }
+    .msg { max-width: 85%; }
+  }
+</style>
+</head>
+<body class="nochat">
+<div id="app">
+  <aside aria-label="Chats">
+    <div class="top">
+      <h1>Unitriage</h1>
+      <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 8h3l1.5-2.5h7L17 8h3v11H4z"/><circle cx="12" cy="13" r="3.6"/></svg></span>
+      <span class="icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.2" fill="currentColor"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/><circle cx="12" cy="19" r="1.2" fill="currentColor"/></svg></span>
+    </div>
+    <label class="search">
+      <svg viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="M15.5 15.5L21 21"/></svg>
+      <input id="q" type="search" placeholder="Search" autocomplete="off" aria-label="Search chats">
+    </label>
+    <div class="chips"><button class="chip on" id="fAll">All</button><button class="chip" id="fUnread">Unread</button></div>
+    <div id="chats"></div>
+    <div class="fab" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 5h11a3 3 0 0 1 3 3v8a3 3 0 0 1-3 3H5z"/><path d="M12 9.5v5M9.5 12h5"/></svg></div>
+    <nav class="nav" aria-hidden="true">
+      <div class="on"><span class="pill"><svg viewBox="0 0 24 24"><path d="M4 6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-6l-5 4v-4H6a2 2 0 0 1-2-2z"/></svg><span class="badge" id="navBadge" hidden></span></span>Chats</div>
+      <div><span class="pill"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3.5"/></svg></span>Updates</div>
+      <div><span class="pill"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3"/><circle cx="5" cy="10" r="2"/><circle cx="19" cy="10" r="2"/><path d="M6 19c0-3 2.7-5 6-5s6 2 6 5z"/></svg></span>Communities</div>
+      <div><span class="pill"><svg viewBox="0 0 24 24"><path d="M6 4l3 1 1 4-2 1.5a11 11 0 0 0 5.5 5.5L15 14l4 1 1 3-2 2C10 21 3 14 4 6z"/></svg></span>Calls</div>
+    </nav>
+  </aside>
+  <main>
+    <div class="head">
+      <button class="back" id="back" aria-label="Back to all chats">←</button>
+      <div class="avatar" id="hAvatar"></div>
+      <div class="who"><div class="n" id="hName"></div><div class="s" id="hSub"></div></div>
+    </div>
+    <div id="messages" aria-live="polite"></div>
+    <div id="preview"><img id="previewImg" alt="Selected photo preview"><button id="clearPreview">✕ Remove</button></div>
+    <div id="composer">
+      <div class="bar">
+        <button class="icon" id="attach" title="Attach photo" aria-label="Attach photo">
+          <svg viewBox="0 0 24 24"><path d="M20.5 11.5l-8.2 8.2a5 5 0 0 1-7.1-7.1l8.8-8.8a3.3 3.3 0 0 1 4.7 4.7l-8.8 8.8a1.7 1.7 0 0 1-2.4-2.4l8-8"/></svg>
+        </button>
+        <span class="icon" aria-hidden="true" title="Stickers">
+          <svg viewBox="0 0 24 24"><path d="M20 12.5V9a5 5 0 0 0-5-5H9a5 5 0 0 0-5 5v6a5 5 0 0 0 5 5h3.5L20 12.5z"/><path d="M12.5 20v-3a4.5 4.5 0 0 1 4.5-4.5h3"/><circle cx="9" cy="10" r=".6"/><circle cx="14.5" cy="10" r=".6"/><path d="M9 14c.8.8 2 1.2 3 1"/></svg>
+        </span>
+        <input class="field" id="text" maxlength="500" autocomplete="off" placeholder="Type a message" aria-label="Message">
+        <button class="icon send" id="send" title="Send" aria-label="Send">
+          <svg class="mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></svg>
+          <svg class="arrow" viewBox="0 0 24 24"><path d="M3 20.5l18-8.5L3 3.5v6.6l11 1.9-11 1.9z" stroke="none"/></svg>
+        </button>
+      </div>
+      <input type="file" id="file" accept="image/jpeg,image/png,image/webp" hidden>
+    </div>
+  </main>
+</div>
+
+<div id="toast" role="status" aria-live="polite"></div>
+
+<dialog id="quoteDlg">
+  <h2>Reply with quote</h2>
+  <p id="quoteFor"></p>
+  <form id="quoteForm">
+    <label for="quoteAmt">Quote (USD)</label>
+    <input id="quoteAmt" type="number" min="1" step="0.01" required placeholder="175">
+    <label for="quoteEta">Arrival time (ETA)</label>
+    <input id="quoteEta" type="text" required placeholder="Today 2 PM">
+    <div class="btns"><button type="button" id="quoteCancel">Cancel</button><button class="primary" type="submit">Send</button></div>
+  </form>
+</dialog>
+
+<script>
+/* Which phone is this?  /phone?role=tenant | technician | owner.
+   Messages are conversations between two people; the property owner (role "manager" in the
+   API) is in every one. The tenant and technician see one chat, headed by the owner's name.
+   The owner sees a list of chats, one per tenant plus the technician. */
+const ROLE = { tenant: "tenant", technician: "technician", owner: "manager" }[new URLSearchParams(location.search).get("role")] || "tenant";
+document.body.classList.add(ROLE === "manager" ? "owner" : "single");
+
+const EMOJI = { tenant: "🧑", technician: "🔧", owner: "🏠" };
+const S = {
+  cfg: { owner_name: "Property Owner", technician_name: "Technician", tenants: {} },
+  msgs: [], lastId: 0, loaded: false, epoch: 0, polling: false,
+  awaiting: {},      // ticket_id -> the step it is paused on, or null
+  unread: {},        // conversation -> count (owner's phone)
+  open: null,        // conversation open on the owner's phone
+  notes: [],         // client-side hints and errors, shown inside a chat
+  typing: false, pending: null,
+  unit: null,        // the tenant's unit, once they have told us (kept in this browser)
+  ask: null,         // a photo waiting on the unit number: { file, text }
+  local: [],         // messages of the unit question, which happen before a ticket exists
+};
+try { S.unit = localStorage.getItem("unitriage.unit") || null; } catch (_) {}
+function saveUnit(u) { S.unit = u; try { u ? localStorage.setItem("unitriage.unit", u) : localStorage.removeItem("unitriage.unit"); } catch (_) {} }
+const $ = (id) => document.getElementById(id);
+const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+const fmtTime = (d) => d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+// A link from a message, as a same-origin path: works whatever host the link names.
+const pathOf = (url) => { const u = new URL(url, location.href); return u.pathname + u.search; };
+const tenantConv = (unit) => "tenant:tenant-" + unit;
+// "12B", "unit 12b", "room no. 3A" -> "12B" / "3A"; null when there is no unit number to find.
+function parseUnit(text) {
+  const t = text.trim();
+  const m = t.match(/\b\d{1,4}\s?[A-Za-z]?\b/) || (/^[A-Za-z0-9-]{1,8}$/.test(t) ? [t] : null);
+  return m ? m[0].replace(/\s+/g, "").toUpperCase() : null;
+}
+const BOT = "Maintenance assistant";
+function localMsg(sender, body, attachments, keep = true) {
+  const m = { id: -1, sender, recipient: sender === "tenant" ? "manager" : "tenant", conversation: currentConv(),
+    ts: new Date(), body, subject: "", attachments: attachments || [], actions: [], ticket_id: null, keep };
+  S.local.push(m); return m;
+}
+function assistantSays(text) { localMsg("manager", text); render(true); }
+
+async function api(path, opts) {
+  const r = await fetch(path, opts);
+  let data = null;
+  try { data = await r.json(); } catch (_) {}
+  if (!r.ok) {
+    let d = data && data.detail;
+    if (Array.isArray(d)) d = d.map((x) => x.msg).join("; ");
+    throw new Error(d || `Request failed (${r.status})`);
+  }
+  return data;
+}
+
+/* ---------- which conversation is on screen ---------- */
+function currentConv() {
+  if (ROLE === "tenant") return S.unit ? tenantConv(S.unit) : "tenant:new";
+  if (ROLE === "technician") return "technician";
+  return S.open;
+}
+function addNote(text, error) { S.notes.push({ conv: currentConv(), text, error }); render(true); }
+
+/* The owner's chat list: one chat per known tenant, the technician, and any other tenant who writes in. */
+function chatEntries() {
+  const entries = Object.entries(S.cfg.tenants).map(([unit, name]) =>
+    ({ key: tenantConv(unit), name, sub: `Tenant · Unit ${unit}`, emoji: EMOJI.tenant }));
+  entries.push({ key: "technician", name: S.cfg.technician_name, sub: "Technician", emoji: EMOJI.technician });
+  const known = new Set(entries.map((e) => e.key));
+  S.msgs.forEach((m) => {
+    if (known.has(m.conversation)) return;
+    known.add(m.conversation);
+    const unit = m.conversation.replace(/^tenant:(tenant-)?/, "");
+    entries.push({ key: m.conversation, name: "Unit " + unit, sub: "Tenant", emoji: EMOJI.tenant });
+  });
+  entries.forEach((e) => { const l = S.msgs.filter((m) => m.conversation === e.key); e.last = l[l.length - 1]; });
+  return entries.sort((a, b) => (b.last ? +b.last.ts : -1) - (a.last ? +a.last.ts : -1));   // newest activity first
+}
+
+/* ---------- rendering ---------- */
+function cleanBody(body) {
+  // Approval links become buttons, so hide the raw URLs.
+  return (body || "").replace(/https?:\/\/\S+/g, "").split("\n").filter((l) => !/^\s*(Approve|Reject):\s*$/.test(l)).join("\n").trim();
+}
+function previewText(m) {
+  const t = cleanBody(m.body).replace(/\s+/g, " ") || m.subject;
+  return (m.sender === ROLE ? "You: " : m.sender === "system" ? "🔒 " : "") + (m.attachments.length ? "📷 " : "") + t;
+}
+function actionEnabled(m, a) {
+  const step = S.awaiting[m.ticket_id];
+  if (a.kind === "quote") return step === "wait_for_quote";
+  if (a.kind === "fixed" || a.kind === "not_fixed" || a.kind === "technician") return step === "wait_for_feedback";
+  return step === "wait_for_approval";
+}
+function bubble(m, onImage) {
+  const sys = m.sender === "system";
+  const b = el("div", "msg " + (m.sender === ROLE ? "out" : "in") + (sys ? " sys" : ""));
+  if (sys) b.appendChild(el("div", "lock", "🔒 Only visible to you"));
+  (m.attachments || []).forEach((att) => {
+    if (att.kind !== "image") return;
+    const i = el("img"); i.src = att.src; i.alt = "Photo of the issue, sent by the tenant"; i.loading = "lazy";
+    i.addEventListener("load", onImage);   // keep the newest message in view once the photo has loaded
+    b.appendChild(i);
+  });
+  if (m.subject) b.appendChild(el("div", "subject", m.subject));
+  const text = cleanBody(m.body);
+  if (text) b.appendChild(el("span", "text", text));
+  b.appendChild(el("span", "ts", fmtTime(m.ts)));
+  // Buttons are only for the person the message was sent to.
+  if (m.recipient === ROLE && m.actions && m.actions.length) {
+    b.classList.add("has-actions");
+    const box = el("div", "actions");
+    m.actions.forEach((a) => {
+      const btn = el("button", a.kind, a.label);
+      btn.disabled = !actionEnabled(m, a);
+      btn.addEventListener("click", () => handleAction(m, a, btn));
+      box.appendChild(btn);
+    });
+    b.appendChild(box);
+  }
+  return b;
+}
+function render(forceScroll) {
+  const box = $("messages"), conv = currentConv();
+  const atBottom = box.scrollHeight - box.scrollTop - box.clientHeight < 80;
+  box.replaceChildren();
+  const stick = forceScroll || atBottom;
+  const list = S.msgs.filter((m) => m.conversation === conv)
+    .concat(ROLE === "tenant" ? S.local.filter((m) => m.keep || !S.unit) : [])
+    .sort((a, b) => a.ts - b.ts);
+  if (!conv) box.appendChild(el("div", "system", "Select a chat to read the conversation."));
+  else if (!list.length && !(ROLE === "tenant" && S.typing)) {
+    const hint = ROLE === "tenant" ? "Send a photo of the problem to start a ticket."
+      : ROLE === "technician" ? "Quote requests from the property owner will appear here."
+      : "No messages in this chat yet.";
+    box.appendChild(el("div", "system", hint));
+  }
+  list.forEach((m) => box.appendChild(bubble(m, () => { if (stick) box.scrollTop = box.scrollHeight; })));
+  S.notes.filter((n) => n.conv === conv).forEach((n) => box.appendChild(el("div", "system" + (n.error ? " error" : ""), n.text)));
+  if (ROLE === "tenant" && S.typing) { const t = el("div", "msg in typing"); t.append(el("span"), el("span"), el("span")); box.appendChild(t); }
+  if (stick) box.scrollTop = box.scrollHeight;
+  if (ROLE === "manager") renderList();
+  renderHeader();
+}
+const LIST = { q: "", unreadOnly: false };
+function renderList() {
+  const box = $("chats"); box.replaceChildren();
+  const all = chatEntries();
+  const total = all.reduce((n, e) => n + (S.unread[e.key] || 0), 0);
+  $("navBadge").textContent = String(total); $("navBadge").hidden = !total;
+  $("fUnread").textContent = total ? "Unread " + total : "Unread";
+  const q = LIST.q.trim().toLowerCase();
+  const shown = all.filter((e) => (!LIST.unreadOnly || S.unread[e.key]) &&
+    (!q || (e.name + " " + e.sub + " " + (e.last ? previewText(e.last) : "")).toLowerCase().includes(q)));
+  if (!shown.length) box.appendChild(el("div", "empty", q ? "No chats found" : LIST.unreadOnly ? "No unread chats" : "No chats yet"));
+  shown.forEach((e) => {
+    const unread = S.unread[e.key] || 0, m = e.last;
+    const btn = el("button", "chat" + (e.key === S.open ? " active" : ""));
+    btn.appendChild(el("div", "avatar", e.emoji));
+    const meta = el("div", "meta"), top = el("div", "row"), bot = el("div", "row");
+    top.append(el("div", "name", e.name), el("div", "time" + (unread ? " unread" : ""), m ? fmtTime(m.ts) : ""));
+    bot.appendChild(el("div", "preview" + (unread ? " unread" : ""), m ? previewText(m) : e.sub));
+    if (unread) bot.appendChild(el("div", "badge", String(unread)));
+    meta.append(top, bot); btn.appendChild(meta);
+    btn.addEventListener("click", () => openChat(e.key));
+    box.appendChild(btn);
+  });
+}
+$("q").addEventListener("input", () => { LIST.q = $("q").value; renderList(); });
+function setFilter(unreadOnly) {
+  LIST.unreadOnly = unreadOnly;
+  $("fAll").classList.toggle("on", !unreadOnly); $("fUnread").classList.toggle("on", unreadOnly);
+  renderList();
+}
+$("fAll").addEventListener("click", () => setFilter(false));
+$("fUnread").addEventListener("click", () => setFilter(true));
+function renderHeader() {
+  const tenant = ROLE === "tenant";
+  let avatar, name, sub;
+  if (ROLE === "manager") {
+    const e = chatEntries().find((x) => x.key === S.open);
+    if (e) { avatar = e.emoji; name = e.name; sub = e.sub; }
+  } else {
+    // Whoever you are chatting with is the property owner.
+    avatar = EMOJI.owner; name = S.cfg.owner_name; sub = tenant && S.typing ? "typing…" : "Property Owner · online";
+  }
+  $("hAvatar").textContent = avatar || ""; $("hName").textContent = name || ""; $("hSub").textContent = sub || "";
+  $("attach").disabled = !tenant || S.typing;
+  $("text").disabled = !tenant || S.typing;
+  $("send").disabled = !tenant || S.typing || !(S.pending || $("text").value.trim());
+  $("text").placeholder = tenant
+    ? (S.ask ? "Your unit number" : awaitingFeedbackTicket() ? "Still not fixed? Tell us what happened" : "Type a message")
+    : ROLE === "technician" ? "Use “Reply with quote” on a request" : "Unitriage replies for you; approvals appear as buttons";
+  const total = Object.values(S.unread).reduce((a, b) => a + b, 0);
+  document.title = (total ? `(${total}) ` : "") + (ROLE === "manager" ? "Property Owner" : tenant ? "Tenant" : "Technician") + " · Unitriage";
+}
+function awaitingFeedbackTicket() {
+  const m = [...S.msgs].reverse().find((x) => x.conversation === currentConv() && x.ticket_id && x.recipient === "tenant" && S.awaiting[x.ticket_id] === "wait_for_feedback");
+  return m && m.ticket_id;
+}
+
+/* ---------- the owner opens and leaves chats ---------- */
+function openChat(key) {
+  S.open = key; S.unread[key] = 0;
+  $("toast").classList.remove("show");
+  document.body.classList.add("chat-open"); document.body.classList.remove("nochat");
+  render(true);
+}
+$("back").addEventListener("click", () => {
+  S.open = null;
+  document.body.classList.remove("chat-open"); document.body.classList.add("nochat");
+  render(false);
+});
+
+/* ---------- notifications (owner's phone) ---------- */
+let toastTimer = null;
+function notify(msgs) {
+  const last = msgs[msgs.length - 1];
+  const e = chatEntries().find((x) => x.key === last.conversation);
+  const box = $("toast"); box.replaceChildren();
+  box.appendChild(el("div", "avatar", e ? e.emoji : "💬"));
+  const t = el("div", "t");
+  t.append(el("b", null, e ? e.name : last.conversation),
+           el("span", null, msgs.length > 1 ? `${msgs.length} new messages` : previewText(last)));
+  box.appendChild(t);
+  box.onclick = () => { box.classList.remove("show"); openChat(last.conversation); };
+  box.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => box.classList.remove("show"), 6000);
+}
+
+/* ---------- polling ---------- */
+async function poll() {
+  if (S.polling) return; S.polling = true;
+  const epoch = S.epoch;
+  try {
+    const q = new URLSearchParams({ after: S.lastId, viewer: ROLE });
+    if (ROLE === "tenant") { if (!S.unit) { S.polling = false; return; } q.set("conversation", tenantConv(S.unit)); }
+    const fresh = await api("/api/demo/messages?" + q);
+    if (epoch !== S.epoch) return;   // the tenant switched unit while this was in flight
+    const incoming = [];
+    fresh.forEach((m) => {
+      S.lastId = Math.max(S.lastId, m.id);
+      const msg = { ...m, ts: new Date(m.ts), attachments: (m.attachments || []).map((a) => ({ ...a, src: pathOf(a.url) })) };
+      S.msgs.push(msg);
+      // A message from someone else, in a chat that is not open, is unread (not on first load).
+      if (ROLE === "manager" && S.loaded && m.sender !== "manager" && m.conversation !== S.open) {
+        S.unread[m.conversation] = (S.unread[m.conversation] || 0) + 1;
+        incoming.push(msg);
+      }
+    });
+    S.loaded = true;
+    if (incoming.length) notify(incoming);
+    // Which buttons are still live depends on where each ticket is paused.
+    const ids = new Set();
+    S.msgs.forEach((m) => { if (m.recipient === ROLE && m.actions && m.actions.length) ids.add(m.ticket_id); });
+    let changed = fresh.length > 0;
+    await Promise.all([...ids].map(async (id) => {
+      try { const t = await api("/api/tickets/" + encodeURIComponent(id));
+        if (S.awaiting[id] !== t.awaiting) { S.awaiting[id] = t.awaiting; changed = true; } } catch (_) {}
+    }));
+    if (changed && epoch === S.epoch) render(false);
+  } catch (_) { /* server restarting; try again next tick */ }
+  finally { S.polling = false; }
+}
+
+/* ---------- buttons on messages ---------- */
+async function handleAction(m, a, btn) {
+  if (a.kind === "quote") return openQuote(m);
+  btn.disabled = true;
+  if (a.kind === "fixed" || a.kind === "not_fixed" || a.kind === "technician") {
+    const note = a.kind === "fixed" ? "" : $("text").value.trim();
+    if (note) $("text").value = "";
+    return sendFeedback(m.ticket_id, a.kind === "fixed", note, a.kind === "technician");
+  }
+  try { await api(pathOf(a.url)); }   // approve / reject
+  catch (e) { addNote(e.message, true); }
+  S.awaiting[m.ticket_id] = null; render(false); poll();
+}
+let quoteTicket = null;
+function openQuote(m) {
+  quoteTicket = m.ticket_id;
+  $("quoteFor").textContent = "Ticket " + m.ticket_id;
+  $("quoteForm").reset(); $("quoteDlg").showModal(); $("quoteAmt").focus();
+}
+$("quoteCancel").addEventListener("click", () => $("quoteDlg").close());
+$("quoteForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const amount = parseFloat($("quoteAmt").value), eta = $("quoteEta").value.trim();
+  $("quoteDlg").close();
+  try {
+    await api("/api/webhooks/technician-quote", { method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ticket_id: quoteTicket, quote: amount, eta }) });
+    S.awaiting[quoteTicket] = "wait_for_approval";
+  } catch (err) { addNote(err.message, true); }
+  render(false); poll();
+});
+
+/* ---------- the tenant's composer ---------- */
+$("attach").addEventListener("click", () => $("file").click());
+$("file").addEventListener("change", () => {
+  const f = $("file").files[0]; if (!f) return;
+  S.pending = f; $("previewImg").src = URL.createObjectURL(f); $("preview").classList.add("show"); renderHeader();
+});
+function clearPending() { S.pending = null; $("file").value = ""; $("preview").classList.remove("show"); renderHeader(); }
+$("clearPreview").addEventListener("click", clearPending);
+$("send").addEventListener("click", sendMessage);
+$("text").addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); sendMessage(); } });
+$("text").addEventListener("input", renderHeader);
+
+async function sendFeedback(ticketId, resolved, note, wantTechnician = false) {
+  try {
+    await api(`/api/tickets/${encodeURIComponent(ticketId)}/feedback`, { method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ resolved, note, want_technician: wantTechnician }) });
+  } catch (e) { addNote(e.message, true); }
+  S.awaiting[ticketId] = null;
+  render(true); poll();
+}
+async function sendMessage() {
+  if (S.typing) return;
+  const text = $("text").value.trim(), photo = S.pending;
+  if (!photo && !text) return;
+  if (photo) {
+    if (S.unit) return sendPhoto(photo, text, S.unit);
+    // No unit yet: keep the photo and ask, like a person would.
+    S.ask = { file: photo, text };
+    localMsg("tenant", text, [{ kind: "image", src: URL.createObjectURL(photo) }], false);
+    clearPending(); $("text").value = "";
+    assistantSays("Thanks, I can see your photo. Which room or unit number is this for?");
+    return;
+  }
+  if (S.ask) return answerUnit(text);
+  // Text on its own is a reply to a DIY guide ("still not fixed"). Anything else needs a photo.
+  const ticketId = awaitingFeedbackTicket();
+  if (!ticketId) {
+    $("text").value = ""; localMsg("tenant", text);
+    assistantSays("To report a new issue, please send a photo of the problem so I can assess it.");
+    return;
+  }
+  $("text").value = "";
+  await sendFeedback(ticketId, false, text);
+}
+async function answerUnit(text) {
+  $("text").value = ""; localMsg("tenant", text);
+  const unit = parseUnit(text);
+  if (!unit) { assistantSays("Sorry, I didn't catch that. Please reply with just your unit or room number, for example 12B."); return; }
+  const { file, text: note } = S.ask;
+  await sendPhoto(file, note, unit, true);
+}
+async function sendPhoto(f, text, unit, asked) {
+  if (!asked) { clearPending(); $("text").value = ""; }
+  S.typing = true; render(true);
+  const fd = new FormData();
+  fd.append("image", f); fd.append("tenant_id", "tenant-" + unit); fd.append("unit_id", unit);
+  fd.append("tenant_name", S.cfg.tenants[unit] || ""); fd.append("description", text);
+  try {
+    await api("/api/tickets/intake", { method: "POST", body: fd });
+    S.ask = null; S.local.forEach((m) => { if (!m.keep) m.drop = true; }); S.local = S.local.filter((m) => !m.drop);
+    if (S.unit !== unit) { saveUnit(unit); S.epoch++; S.msgs = []; S.lastId = 0; S.loaded = false; }
+  } catch (e) {
+    if (asked && /unknown unit/i.test(e.message)) {
+      assistantSays(`I couldn't find a unit "${unit}". Could you check the number and send it again?`);
+    } else { addNote("Could not submit the photo: " + e.message, true); S.ask = null; }
+  } finally { S.typing = false; render(true); await poll(); }
+}
+
+/* ---------- start ---------- */
+if (ROLE !== "manager") document.body.classList.remove("nochat");
+api("/api/demo/config").then((c) => { S.cfg = { ...S.cfg, ...c }; render(false); }).catch(() => {});
+render(true); poll();
+setInterval(poll, 1500); 
+</script>
+</body>
+</html>

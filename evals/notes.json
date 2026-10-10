@@ -1,0 +1,359 @@
+[
+ {
+  "note": "I can smell gas in the kitchen",
+  "expect": [
+   "gas"
+  ]
+ },
+ {
+  "note": "There is a strong smell of gas near the stove, it started this morning",
+  "expect": [
+   "gas"
+  ]
+ },
+ {
+  "note": "The kitchen reeks of rotten eggs and the stove is off",
+  "expect": [
+   "gas"
+  ],
+  "why": "paraphrase: that is the smell added to gas"
+ },
+ {
+  "note": "Something smells like it's burning near the wall socket",
+  "expect": [
+   "fire_smoke",
+   "electrical"
+  ]
+ },
+ {
+  "note": "Smoke is coming out of the socket in the bedroom",
+  "expect": [
+   "fire_smoke",
+   "electrical"
+  ]
+ },
+ {
+  "note": "I plugged in the kettle and got an electric shock",
+  "expect": [
+   "electrical"
+  ]
+ },
+ {
+  "note": "The switch crackled and sparks came out",
+  "expect": [
+   "electrical"
+  ]
+ },
+ {
+  "note": "The wire behind the cooker is hot and the plastic has melted",
+  "expect": [
+   "electrical"
+  ],
+  "why": "paraphrase"
+ },
+ {
+  "note": "Water is pouring through the ceiling into the living room",
+  "expect": [
+   "flooding"
+  ]
+ },
+ {
+  "note": "A pipe burst under the sink and the whole floor is under water",
+  "expect": [
+   "flooding"
+  ]
+ },
+ {
+  "note": "The ceiling in the hallway is sagging badly and looks like it will come down",
+  "expect": [
+   "collapse"
+  ]
+ },
+ {
+  "note": "Part of the bathroom ceiling just fell down",
+  "expect": [
+   "collapse"
+  ]
+ },
+ {
+  "note": "My elderly mother is stuck in the bathroom and the water keeps rising",
+  "expect": [
+   "danger",
+   "flooding"
+  ],
+  "vulnerable": true
+ },
+ {
+  "note": "Someone got hurt, there is a live wire lying on the floor",
+  "expect": [
+   "danger",
+   "electrical"
+  ]
+ },
+ {
+  "note": "There's a fire in the kitchen!",
+  "expect": [
+   "fire_smoke"
+  ]
+ },
+ {
+  "note": "Water is coming in from upstairs like a waterfall",
+  "expect": [
+   "flooding"
+  ],
+  "why": "paraphrase"
+ },
+ {
+  "note": "रसोई में गैस की बदबू आ रही है",
+  "expect": [
+   "gas"
+  ],
+  "lang": "hi",
+  "why": "Hindi: there is a smell of gas in the kitchen"
+ },
+ {
+  "note": "Huele a gas en la cocina",
+  "expect": [
+   "gas"
+  ],
+  "lang": "es",
+  "why": "Spanish: it smells of gas in the kitchen"
+ },
+ {
+  "note": "सॉकेट से चिंगारियां निकल रही हैं",
+  "expect": [
+   "electrical"
+  ],
+  "lang": "hi",
+  "why": "Hindi: sparks are coming out of the socket"
+ },
+ {
+  "note": "El techo se está cayendo",
+  "expect": [
+   "collapse"
+  ],
+  "lang": "es",
+  "why": "Spanish: the ceiling is falling down"
+ },
+ {
+  "note": "The tap drips a bit at night",
+  "expect": []
+ },
+ {
+  "note": "Kitchen sink is draining slowly",
+  "expect": []
+ },
+ {
+  "note": "No smell of gas, just wanted to report the stove igniter keeps clicking",
+  "expect": [],
+  "why": "negation"
+ },
+ {
+  "note": "It's not flooding, just a small drip under the sink",
+  "expect": [],
+  "why": "negation"
+ },
+ {
+  "note": "The light bulb in the hallway is out",
+  "expect": []
+ },
+ {
+  "note": "Paint is peeling on the bedroom wall",
+  "expect": []
+ },
+ {
+  "note": "My door handle is loose",
+  "expect": []
+ },
+ {
+  "note": "We had a fire drill today and the alarm test was very loud",
+  "expect": [],
+  "why": "the word fire, no fire"
+ },
+ {
+  "note": "Please fix the leaking pipe sometime this week, not urgent",
+  "expect": []
+ },
+ {
+  "note": "The washing machine is leaking a little water on the floor",
+  "expect": [],
+  "why": "a small leak is not flooding"
+ },
+ {
+  "note": "It smells musty in the bathroom",
+  "expect": []
+ },
+ {
+  "note": "The ceiling has a brown stain that has been there a while",
+  "expect": []
+ },
+ {
+  "note": "A small crack appeared in the wall near the window",
+  "expect": []
+ },
+ {
+  "note": "URGENT URGENT EMERGENCY please send someone to fix my dripping tap NOW",
+  "expect": [],
+  "why": "shouting is not a hazard"
+ },
+ {
+  "note": "I'm worried this is really dangerous!!! the wardrobe door squeaks",
+  "expect": [],
+  "why": "trying to jump the queue"
+ },
+ {
+  "note": "The gas bill is higher than usual, can you check the meter reading?",
+  "expect": [],
+  "why": "the word gas, no leak"
+ },
+ {
+  "note": "The smoke detector in the hallway beeps every minute, I think the battery is low",
+  "expect": [],
+  "why": "the word smoke, no smoke"
+ },
+ {
+  "note": "नल से पानी टपक रहा है",
+  "expect": [],
+  "lang": "hi",
+  "why": "Hindi: the tap is dripping"
+ },
+ {
+  "note": "The electrician fixed the socket yesterday, thanks, all working now",
+  "expect": [],
+  "why": "past, resolved"
+ },
+ {
+  "note": "My neighbour's flat flooded last year but mine has been fine",
+  "expect": [],
+  "why": "somebody else's, in the past"
+ },
+ {
+  "note": "The socket cover is cracked",
+  "expect": [],
+  "borderline": true,
+  "why": "arguably an electrical concern"
+ },
+ {
+  "note": "The hot water pipe makes loud banging noises",
+  "expect": [],
+  "borderline": true
+ },
+ {
+  "note": "There is a bulge in the ceiling above the bed",
+  "expect": [
+   "collapse"
+  ],
+  "borderline": true,
+  "why": "a bulge may be a sag"
+ },
+ {
+  "expect": [
+   "no_water"
+  ],
+  "note": "There has been no water in the whole flat since this morning"
+ },
+ {
+  "expect": [
+   "no_water"
+  ],
+  "note": "We have no running water at all, even the cold tap is dry"
+ },
+ {
+  "expect": [
+   "no_power"
+  ],
+  "note": "The power has been out in our flat for hours but the neighbours have electricity"
+ },
+ {
+  "expect": [
+   "no_heat"
+  ],
+  "note": "No heating and it is freezing in here, the boiler has stopped"
+ },
+ {
+  "expect": [
+   "no_lock"
+  ],
+  "note": "The front door lock is broken and I can't lock the flat"
+ },
+ {
+  "expect": [
+   "no_lock"
+  ],
+  "note": "Someone broke in through the back door last night"
+ },
+ {
+  "expect": [
+   "no_toilet"
+  ],
+  "note": "We only have one toilet and it won't flush at all"
+ },
+ {
+  "expect": [
+   "no_heat"
+  ],
+  "note": "No heating and my newborn baby is freezing",
+  "vulnerable": true
+ },
+ {
+  "expect": [
+   "no_water"
+  ],
+  "note": "There is no water and my elderly father needs to take his medication",
+  "vulnerable": true
+ },
+ {
+  "expect": [
+   "no_power"
+  ],
+  "note": "The power is out and my wife is pregnant and on oxygen",
+  "vulnerable": true
+ },
+ {
+  "lang": "hi",
+  "why": "Hindi: there is no electricity in the house",
+  "expect": [
+   "no_power"
+  ],
+  "note": "घर में बिजली नहीं है"
+ },
+ {
+  "lang": "es",
+  "why": "Spanish: we have had no water since yesterday",
+  "expect": [
+   "no_water"
+  ],
+  "note": "No tenemos agua desde ayer"
+ },
+ {
+  "expect": [],
+  "note": "The hot water is only lukewarm in the mornings"
+ },
+ {
+  "expect": [],
+  "note": "I would like a spare key cut for my flatmate"
+ },
+ {
+  "why": "past, resolved",
+  "expect": [],
+  "note": "We had a power cut last month but everything is fine now"
+ },
+ {
+  "why": "a baby is mentioned but nothing is wrong, so nobody is affected",
+  "expect": [],
+  "note": "My baby's room needs repainting when you have time"
+ },
+ {
+  "why": "low pressure is not no water",
+  "expect": [],
+  "note": "The bathroom tap has low water pressure"
+ },
+ {
+  "expect": [],
+  "note": "The heating works fine, just a bit noisy at night"
+ },
+ {
+  "expect": [],
+  "note": "The door handle on the bedroom door is loose"
+ }
+]

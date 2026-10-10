@@ -1,0 +1,17 @@
+# secrets: never commit these
+.env
+
+# local state
+.venv/
+__pycache__/
+.pytest_cache/
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+
+# evaluation photos are third-party (Unsplash / Wikimedia licences) or your own tenants' pictures:
+# keep them out of a public repository
+evals/images/
+
+# local tooling
+.claude/

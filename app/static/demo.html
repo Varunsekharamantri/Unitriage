@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Unitriage Demo</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>💬</text></svg>">
+<style>
+  :root { --bg: #e9edef; --text: #111b21; --muted: #54656f; --card: #ffffff; --green: #00a884; --frame: #1f2c34; }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #0b141a; --text: #e9edef; --muted: #8696a0; --card: #111b21; --green: #00a884; --frame: #2a3942; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font: 14px/1.45 "Segoe UI", system-ui, -apple-system, Helvetica, Arial, sans-serif; }
+  header { text-align: center; padding: 26px 16px 8px; }
+  h1 { margin: 0; font-size: 26px; font-weight: 700; }
+  header p { margin: 6px auto 0; max-width: 760px; color: var(--muted); }
+  .flow { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 10px; margin: 18px auto 4px; padding: 0 16px; max-width: 1100px; }
+  .flow span { background: var(--card); border-radius: 999px; padding: 5px 12px; font-size: 13px; box-shadow: 0 1px 2px rgba(0,0,0,.12); }
+  .flow span b { color: var(--green); margin-right: 4px; }
+  .stage { display: flex; justify-content: center; align-items: flex-start; gap: 34px; padding: 22px 16px 40px; flex-wrap: wrap; }
+  .phone { width: 380px; }
+  .phone .who { text-align: center; font-weight: 700; font-size: 15px; margin-bottom: 4px; }
+  .phone .role { text-align: center; color: var(--muted); font-size: 12.5px; margin-bottom: 10px; min-height: 36px; }
+  .frame { border: 10px solid var(--frame); border-radius: 38px; overflow: hidden; height: 700px; background: #000; box-shadow: 0 14px 34px rgba(0,0,0,.28); }
+  .frame iframe { width: 100%; height: 100%; border: 0; display: block; background: #fff; }
+</style>
+</head>
+<body>
+<header>
+  <h1>💬 Unitriage — three people, one ticket</h1>
+  <p>Each phone is a different person's chat app. The property owner sits between the tenant and the technician, and sees both conversations. Start on the tenant's phone.</p>
+</header>
+<div class="flow">
+  <span><b>1</b>Tenant sends a photo to the owner</span>
+  <span><b>2</b>AI triages it and replies as the owner</span>
+  <span><b>3</b>Technician is asked for a quote</span>
+  <span><b>4</b>Owner approves in the technician chat</span>
+  <span><b>5</b>Technician gets the access code</span>
+</div>
+<div class="stage">
+  <section class="phone">
+    <div class="who">🧑 Tenant</div>
+    <div class="role">Chats with the property owner</div>
+    <div class="frame"><iframe id="tenant" src="/phone?role=tenant" title="Tenant phone"></iframe></div>
+  </section>
+  <section class="phone">
+    <div class="who">🏠 Property Owner</div>
+    <div class="role">Has a chat with each tenant and with the technician, and gets notified</div>
+    <div class="frame"><iframe id="owner" src="/phone?role=owner" title="Property owner phone"></iframe></div>
+  </section>
+  <section class="phone">
+    <div class="who">🔧 Technician</div>
+    <div class="role">Chats with the property owner: quotes jobs, receives dispatch details</div>
+    <div class="frame"><iframe id="technician" src="/phone?role=technician" title="Technician phone"></iframe></div>
+  </section>
+</div>
+</body>
+</html>
