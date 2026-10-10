@@ -8,6 +8,7 @@ import base64
 import json
 import logging
 import re
+import time
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import date
@@ -17,7 +18,7 @@ import httpx
 from app import config
 from app.core.policy import assess
 from app.core.schemas import TriageObservation, VisualTriageAssessment
-from app.core.health import ProviderHealth
+from app.core.health import ProviderHealth, is_transient
 from app.core.usage import Usage, UsageTracker
 from app.services.imaging import UnreadableImage, prepare_image
 from app.services.note_screen import (
@@ -206,7 +207,7 @@ class GroqProvider(VisionProvider):
             input_tokens=raw_usage.get("prompt_tokens", 0),
             output_tokens=raw_usage.get("completion_tokens", 0),
         )
-        return ProviderResult(body["choices"][0]["message"]["content"], usage)
+        return ProviderResult(body["choices"][0]["message"].get("content") or "", usage)
 
 
 class OpenRouterProvider(GroqProvider):
@@ -264,8 +265,15 @@ def parse_assessment(
     from it by app.core.policy. The model never picks them. Output without evidence is only
     accepted when require_evidence is False (the older shape, kept for tests and mocks).
     """
-    text = _FENCE.sub("", raw.strip())
-    data = json.loads(text)
+    text = _FENCE.sub("", (raw or "").strip())
+    try:
+        data = json.loads(text)
+    except json.JSONDecodeError:
+        # Some models wrap the JSON in a sentence or think out loud first: take the object itself.
+        block = re.search(r"\{.*\}", text, re.S)
+        if not block:
+            raise
+        data = json.loads(block.group(0))
     if isinstance(data, dict) and "evidence" in data:
         obs = TriageObservation(**data)
         severity, diy, reasons = assess(obs.evidence)
@@ -302,6 +310,7 @@ class VisionService:
         note_threshold: float = config.NOTE_HAZARD_THRESHOLD,
         today: Callable[[], date] = date.today,
         health: Optional[ProviderHealth] = None,
+        retry_delay: float = 0.7,
     ):
         if not providers:
             raise ValueError("VisionService needs at least one provider")
@@ -314,6 +323,7 @@ class VisionService:
         self._note_threshold = note_threshold
         self._today = today  # a parameter so tests can set the season
         self._health = health or ProviderHealth()
+        self._retry_delay = retry_delay
 
     def screen_note(self, note: str) -> NoteAssessment:
         """What the tenant's note alone means (a gas smell, no water...). Works even when every
@@ -366,6 +376,9 @@ class VisionService:
                     msg = f"{provider.name} attempt {attempt}: {exc.__class__.__name__}: {exc}"
                     errors.append(msg)
                     logger.warning(msg)
+                    if is_transient(exc) and attempt < self._retries:
+                        time.sleep(self._retry_delay)  # a server hiccup (500/503): try once more
+                        continue
                     self._health.failed(provider.name, exc)  # out of quota or down: skip it for a while
                     break
                 errors.append(msg)

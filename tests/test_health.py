@@ -78,3 +78,27 @@ def test_summaries_move_to_the_next_provider_and_stay_there():
     w = OwnerSummaryWriter([("openrouter", openrouter), ("groq", groq)])
     assert w.write({"a": 1}) == text and w.write({"a": 1}) == text
     assert calls == {"or": 1, "groq": 2}
+
+
+def test_a_server_hiccup_is_retried_once_before_giving_up_on_the_provider():
+    from app.core.health import is_transient
+
+    assert is_transient(RuntimeError("500 INTERNAL. Internal error encountered"))
+    assert is_transient(http_error(503))
+    assert not is_transient(http_error(429))
+
+    flaky = MockProvider([RuntimeError("500 INTERNAL"), GOOD], name="gemini")
+    other = MockProvider([GOOD], name="groq")
+    VisionService([flaky, other], retry_delay=0).triage(IMG, "image/png")
+    assert (flaky.calls, other.calls) == (2, 0)  # the second try on the same provider worked
+
+
+def test_json_wrapped_in_prose_is_still_read():
+    from app.services.vision_service import parse_assessment
+    import json
+
+    obs = {"summary": "Dripping tap", "trade": "plumber", "confidence": 0.95, "evidence": {
+        "water": "dripping", "damage": "none", "electrical_hazard": False, "gas_or_fire": False,
+        "structural_risk": False, "sewage": False, "simple_fix": True, "note_matches_photo": None}}
+    wrapped = "Here is my assessment:\n" + json.dumps(obs) + "\nHope that helps."
+    assert parse_assessment(wrapped, 0.75, True).is_safe_for_diy

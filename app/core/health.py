@@ -21,6 +21,17 @@ def is_quota_error(exc: BaseException) -> bool:
     return code in (402, 429) or "RESOURCE_EXHAUSTED" in str(exc)
 
 
+def is_transient(exc: BaseException) -> bool:
+    """A server-side hiccup worth one more try right away: a 5xx, Google's INTERNAL/UNAVAILABLE,
+    or a dropped connection. (A quota error is not: retrying immediately won't help.)"""
+    response = getattr(exc, "response", None)
+    code = getattr(response, "status_code", None) or getattr(exc, "code", None) or getattr(exc, "status_code", None)
+    if isinstance(code, int) and 500 <= code <= 599:
+        return True
+    text = f"{exc.__class__.__name__} {exc}"
+    return any(k in text for k in ("INTERNAL", "UNAVAILABLE", "RemoteProtocolError", "ReadTimeout", "ConnectError"))
+
+
 class ProviderHealth:
     def __init__(
         self,
