@@ -242,12 +242,14 @@ const S = {
   open: null,        // conversation open on the owner's phone
   notes: [],         // client-side hints and errors, shown inside a chat
   typing: false, pending: null,
-  unit: null,        // the tenant's unit, once they have told us (kept in this browser)
+  unit: null,        // the tenant's unit, once they have told us (this page load only)
+  base: null,        // newest message id when the page opened: older history is not shown
   ask: null,         // a photo waiting on the unit number: { file, text }
   local: [],         // messages of the unit question, which happen before a ticket exists
 };
-try { S.unit = localStorage.getItem("unitriage.unit") || null; } catch (_) {}
-function saveUnit(u) { S.unit = u; try { u ? localStorage.setItem("unitriage.unit", u) : localStorage.removeItem("unitriage.unit"); } catch (_) {} }
+// Every page load is a fresh chat: nothing is remembered between refreshes (history stays in the
+// database, but this page only shows what happens after it opened).
+function saveUnit(u) { S.unit = u; }
 const $ = (id) => document.getElementById(id);
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
 const fmtTime = (d) => d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
@@ -461,6 +463,11 @@ async function poll() {
   if (S.polling) return; S.polling = true;
   const epoch = S.epoch;
   try {
+    if (S.base === null) {   // first run: note where the conversation stands, and start after it
+      const all = await api("/api/demo/messages?" + new URLSearchParams({ after: 0, viewer: ROLE }));
+      S.base = all.reduce((n, m) => Math.max(n, m.id), 0);
+      S.lastId = S.base;
+    }
     const q = new URLSearchParams({ after: S.lastId, viewer: ROLE });
     if (ROLE === "tenant") { if (!S.unit) { S.polling = false; return; } q.set("conversation", tenantConv(S.unit)); }
     const fresh = await api("/api/demo/messages?" + q);
@@ -584,7 +591,7 @@ async function sendPhoto(f, text, unit, asked) {
   try {
     await api("/api/tickets/intake", { method: "POST", body: fd });
     S.ask = null; S.local.forEach((m) => { if (!m.keep) m.drop = true; }); S.local = S.local.filter((m) => !m.drop);
-    if (S.unit !== unit) { saveUnit(unit); S.epoch++; S.msgs = []; S.lastId = 0; S.loaded = false; }
+    if (S.unit !== unit) { saveUnit(unit); S.epoch++; S.msgs = []; S.lastId = S.base || 0; S.loaded = false; }
   } catch (e) {
     if (asked && /unknown unit/i.test(e.message)) {
       assistantSays(`I couldn't find a unit "${unit}". Could you check the number and send it again?`);
