@@ -329,3 +329,20 @@ def test_demo_ui_can_be_switched_off(tmp_path, monkeypatch):
         r = c.get("/", follow_redirects=False)
         assert r.status_code in (302, 307) and r.headers["location"] == "/docs"
     conn.close()
+
+
+def test_plain_tenant_messages_reach_the_owner(client):
+    r = client.post("/api/chat", json={"unit_id": "12B", "messages": [
+        {"sender": "tenant", "body": "Hi, the heating is making a noise"},
+        {"sender": "manager", "body": "Please send a photo so I can assess it."}]})
+    assert r.status_code == 201 and r.json() == {"sent": 2}
+    owner = feed(client, viewer="manager")
+    assert [(m["sender"], m["recipient"], m["conversation"]) for m in owner] == [
+        ("tenant", "manager", "tenant:tenant-12B"), ("manager", "tenant", "tenant:tenant-12B")]
+    assert feed(client, viewer="technician") == []
+
+
+def test_chat_rejects_an_unknown_unit_and_empty_input(client):
+    assert client.post("/api/chat", json={"unit_id": "99Z", "messages": [{"sender": "tenant", "body": "hi"}]}).status_code == 422
+    assert client.post("/api/chat", json={"unit_id": "12B", "messages": []}).status_code == 422
+    assert client.post("/api/chat", json={"unit_id": "12B", "messages": [{"sender": "system", "body": "x"}]}).status_code == 422

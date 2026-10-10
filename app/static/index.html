@@ -355,7 +355,7 @@ function render(forceScroll) {
   box.replaceChildren();
   const stick = forceScroll || atBottom;
   const list = S.msgs.filter((m) => m.conversation === conv)
-    .concat(ROLE === "tenant" ? S.local.filter((m) => m.keep || !S.unit) : [])
+    .concat(ROLE === "tenant" ? S.local : [])
     .sort((a, b) => a.ts - b.ts);
   if (!conv) box.appendChild(el("div", "system", "Select a chat to read the conversation."));
   else if (!list.length && !(ROLE === "tenant" && S.typing)) {
@@ -551,52 +551,81 @@ async function sendFeedback(ticketId, resolved, note, wantTechnician = false) {
   S.awaiting[ticketId] = null;
   render(true); poll();
 }
+// Plain messages (no photo, no ticket) go to the server too, so the owner's phone gets them.
+async function postChat(unit, messages) {
+  await api("/api/chat", { method: "POST", headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ unit_id: unit, messages }) });
+}
+function useUnit(unit) {
+  if (S.unit !== unit) { saveUnit(unit); S.epoch++; S.msgs = []; S.lastId = S.base || 0; S.loaded = false; }
+}
 async function sendMessage() {
   if (S.typing) return;
   const text = $("text").value.trim(), photo = S.pending;
   if (!photo && !text) return;
-  if (photo) {
-    if (S.unit) return sendPhoto(photo, text, S.unit);
-    // No unit yet: keep the photo and ask, like a person would.
-    S.ask = { file: photo, text };
-    localMsg("tenant", text, [{ kind: "image", src: URL.createObjectURL(photo) }], false);
+  if (S.ask) {                       // the assistant is waiting for the unit number
+    if (photo) {                     // a newer photo replaces the held one
+      S.ask.file = photo; S.ask.text = text;
+      localMsg("tenant", text, [{ kind: "image", src: URL.createObjectURL(photo) }], false);
+      clearPending(); $("text").value = "";
+      assistantSays("Got it. Which room or unit number is this for?");
+      return;
+    }
+    return answerUnit(text);
+  }
+  if (!S.unit) {                     // first contact: hold what they sent, and ask who and where they are
+    S.ask = { file: photo || null, text: photo ? text : "" };
+    localMsg("tenant", text, photo ? [{ kind: "image", src: URL.createObjectURL(photo) }] : [], !photo);
     clearPending(); $("text").value = "";
-    assistantSays("Thanks, I can see your photo. Which room or unit number is this for?");
+    assistantSays(photo ? "Thanks, I can see your photo. Which room or unit number is this for?"
+                        : "Hi! Which room or unit number are you in?");
     return;
   }
-  if (S.ask) return answerUnit(text);
+  if (photo) return sendPhoto(photo, text, S.unit);
   // Text on its own is a reply to a DIY guide ("still not fixed"). Anything else needs a photo.
   const ticketId = awaitingFeedbackTicket();
+  $("text").value = "";
   if (!ticketId) {
-    $("text").value = ""; localMsg("tenant", text);
-    assistantSays("To report a new issue, please send a photo of the problem so I can assess it.");
+    try {
+      await postChat(S.unit, [{ sender: "tenant", body: text },
+        { sender: "manager", body: "To report a new issue, please send a photo of the problem so I can assess it." }]);
+    } catch (e) { addNote("Could not send: " + e.message, true); }
+    await poll();
     return;
   }
-  $("text").value = "";
   await sendFeedback(ticketId, false, text);
 }
 async function answerUnit(text) {
   $("text").value = ""; localMsg("tenant", text);
   const unit = parseUnit(text);
   if (!unit) { assistantSays("Sorry, I didn't catch that. Please reply with just your unit or room number, for example 12B."); return; }
-  const { file, text: note } = S.ask;
-  await sendPhoto(file, note, unit, true);
+  // What was said so far (without the photo bubble, which the ticket will carry) goes to the owner too.
+  const said = S.local.filter((m) => m.body && !(m.attachments || []).length)
+    .map((m) => ({ sender: m.sender === "tenant" ? "tenant" : "manager", body: m.body }));
+  const held = S.ask;
+  try {
+    await postChat(unit, said);      // also checks the unit exists
+  } catch (e) {
+    if (/unknown unit/i.test(e.message)) assistantSays(`I couldn't find a unit "${unit}". Could you check the number and send it again?`);
+    else addNote("Could not send: " + e.message, true);
+    return;
+  }
+  S.local = []; S.ask = null; useUnit(unit);
+  if (held && held.file) { await sendPhoto(held.file, held.text, unit); return; }
+  try { await postChat(unit, [{ sender: "manager", body: `Thanks, I have you down for unit ${unit}. Please send a photo of the problem so I can assess it.` }]); } catch (_) {}
+  render(true); await poll();
 }
-async function sendPhoto(f, text, unit, asked) {
-  if (!asked) { clearPending(); $("text").value = ""; }
+async function sendPhoto(f, text, unit) {
+  clearPending(); $("text").value = "";
   S.typing = true; render(true);
   const fd = new FormData();
   fd.append("image", f); fd.append("tenant_id", "tenant-" + unit); fd.append("unit_id", unit);
   fd.append("tenant_name", S.cfg.tenants[unit] || ""); fd.append("description", text);
   try {
     await api("/api/tickets/intake", { method: "POST", body: fd });
-    S.ask = null; S.local.forEach((m) => { if (!m.keep) m.drop = true; }); S.local = S.local.filter((m) => !m.drop);
-    if (S.unit !== unit) { saveUnit(unit); S.epoch++; S.msgs = []; S.lastId = S.base || 0; S.loaded = false; }
-  } catch (e) {
-    if (asked && /unknown unit/i.test(e.message)) {
-      assistantSays(`I couldn't find a unit "${unit}". Could you check the number and send it again?`);
-    } else { addNote("Could not submit the photo: " + e.message, true); S.ask = null; }
-  } finally { S.typing = false; render(true); await poll(); }
+    S.local = []; useUnit(unit);
+  } catch (e) { addNote("Could not submit the photo: " + e.message, true); }
+  finally { S.typing = false; render(true); await poll(); }
 }
 
 /* ---------- start ---------- */

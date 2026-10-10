@@ -115,6 +115,32 @@ def intake(
     return _summary(workflow, ticket_id)
 
 
+class ChatMessage(BaseModel):
+    sender: Literal["tenant", "manager"]  # the tenant, or the assistant answering as the owner
+    body: str = Field(min_length=1, max_length=500)
+
+
+class ChatIn(BaseModel):
+    unit_id: str = Field(min_length=1, max_length=20)
+    messages: list[ChatMessage] = Field(min_length=1, max_length=8)
+
+
+@router.post("/chat", status_code=201)
+def chat(request: Request, body: ChatIn):
+    """Plain messages in a tenant's chat, with no photo or ticket: a question, the unit number,
+    the assistant's reply. They reach the owner's phone like any other message."""
+    try:
+        request.app.state.vault.get(f"vault/{body.unit_id}")
+    except KeyError:
+        raise HTTPException(422, f"Unknown unit {body.unit_id!r}") from None
+    chat_id = tenant_chat(f"tenant-{body.unit_id}")
+    for m in body.messages:
+        request.app.state.notifier.send(
+            "manager" if m.sender == "tenant" else "tenant", "", m.body, sender=m.sender, conversation=chat_id
+        )
+    return {"sent": len(body.messages)}
+
+
 @router.get("/usage")
 def usage(request: Request):
     return request.app.state.usage.summary()
