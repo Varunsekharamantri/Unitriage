@@ -84,7 +84,9 @@ def test_a_server_hiccup_is_retried_once_before_giving_up_on_the_provider():
     from app.core.health import is_transient
 
     assert is_transient(RuntimeError("500 INTERNAL. Internal error encountered"))
-    assert is_transient(http_error(503))
+    assert is_transient(http_error(500))
+    assert not is_transient(http_error(503))  # "busy": asking again at once only doubles the wait
+    assert not is_transient(RuntimeError("504 DEADLINE_EXCEEDED"))
     assert not is_transient(http_error(429))
 
     flaky = MockProvider([RuntimeError("500 INTERNAL"), GOOD], name="gemini")
@@ -102,3 +104,23 @@ def test_json_wrapped_in_prose_is_still_read():
         "structural_risk": False, "sewage": False, "simple_fix": True, "note_matches_photo": None}}
     wrapped = "Here is my assessment:\n" + json.dumps(obs) + "\nHope that helps."
     assert parse_assessment(wrapped, 0.75, True).is_safe_for_diy
+
+
+def test_a_provider_that_is_slow_cannot_hang_the_ticket_forever():
+    import time
+
+    import pytest
+
+    from app.services.vision_service import TriageError
+
+    class Slow(MockProvider):
+        def generate(self, *a, **k):
+            time.sleep(0.15)
+            raise RuntimeError("connection reset")
+
+    service = VisionService([Slow([GOOD], name="a"), Slow([GOOD], name="b"), Slow([GOOD], name="c")], budget=0.2, retry_delay=0)
+    t = time.monotonic()
+    with pytest.raises(TriageError) as e:
+        service.triage(IMG, "image/png")
+    assert time.monotonic() - t < 1.0
+    assert "gave up" in str(e.value)

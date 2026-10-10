@@ -116,7 +116,7 @@ def test_the_gemini_client_is_kept_alive_while_the_request_is_sent(monkeypatch):
             return type("R", (), {"text": '{"hazards": ["gas"]}'})()
 
     class FakeClient:
-        def __init__(self, api_key):
+        def __init__(self, api_key, http_options=None):
             self._api = Api()
             self.models = Models(self._api)
 

@@ -12,9 +12,9 @@ except ImportError:  # dotenv is optional at runtime
 # The work is spread by job: each job has its own preferred order (first = does most of it), and a
 # provider that runs out of quota is skipped for a few minutes (app/core/health.py), so work moves
 # on by itself. Comma-separated; providers without a key are skipped.
-# Photos: strongest vision model first.
+# Photos: Groq first (fastest, and the most accurate on evals/run_eval.py), Gemini as the backup.
 VISION_PROVIDERS: list[str] = [
-    p.strip() for p in os.getenv("VISION_PROVIDERS", "gemini,groq,openrouter").split(",") if p.strip()
+    p.strip() for p in os.getenv("VISION_PROVIDERS", "groq,gemini,openrouter").split(",") if p.strip()
 ]
 
 GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "")
@@ -62,6 +62,9 @@ UNSPLASH_ACCESS_KEY: str = os.getenv("UNSPLASH_ACCESS_KEY", "")
 DATABASE_URL: str = os.getenv("DATABASE_URL", "")
 CHECKPOINT_DB_PATH: str = os.getenv("CHECKPOINT_DB_PATH", "checkpoints.sqlite")
 CONFIDENCE_THRESHOLD: float = float(os.getenv("CONFIDENCE_THRESHOLD", "0.75"))
+# The most seconds photo triage may take in total before the ticket goes to manual review. Each
+# provider call also has its own timeout, so a provider that never answers can't hang a ticket.
+TRIAGE_BUDGET_SECONDS: float = float(os.getenv("TRIAGE_BUDGET_SECONDS", "30"))
 VISION_RETRIES_PER_PROVIDER: int = int(os.getenv("VISION_RETRIES_PER_PROVIDER", "2"))
 VAULT_SECRET: str = os.getenv("VAULT_SECRET", "dev-only-secret")
 # The address links in messages (approvals, photos) point to. On Render it is filled in

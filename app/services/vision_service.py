@@ -134,10 +134,12 @@ class VisionProvider(ABC):
 class GeminiProvider(VisionProvider):
     name = "gemini"
 
-    def __init__(self, api_key: str, model: str):
+    def __init__(self, api_key: str, model: str, timeout: float = 12.0):
         from google import genai  # imported lazily so tests need no key
+        from google.genai import types
 
-        self._client = genai.Client(api_key=api_key)
+        # Without a timeout the client waits as long as Google does, which can be forever.
+        self._client = genai.Client(api_key=api_key, http_options=types.HttpOptions(timeout=int(timeout * 1000)))
         self._model = model
         self.model = model
 
@@ -169,7 +171,7 @@ class GroqProvider(VisionProvider):
     _URL = "https://api.groq.com/openai/v1/chat/completions"
     _JSON_MODE = True
 
-    def __init__(self, api_key: str, model: str, timeout: float = 30.0):
+    def __init__(self, api_key: str, model: str, timeout: float = 15.0):
         self._api_key = api_key
         self._model = model
         self.model = model
@@ -311,6 +313,7 @@ class VisionService:
         today: Callable[[], date] = date.today,
         health: Optional[ProviderHealth] = None,
         retry_delay: float = 0.7,
+        budget: float = config.TRIAGE_BUDGET_SECONDS,
     ):
         if not providers:
             raise ValueError("VisionService needs at least one provider")
@@ -324,6 +327,7 @@ class VisionService:
         self._today = today  # a parameter so tests can set the season
         self._health = health or ProviderHealth()
         self._retry_delay = retry_delay
+        self._budget = budget
 
     def screen_note(self, note: str) -> NoteAssessment:
         """What the tenant's note alone means (a gas smell, no water...). Works even when every
@@ -360,8 +364,12 @@ class VisionService:
         except UnreadableImage as exc:
             raise TriageError(f"The photo could not be read: {exc}") from exc
         errors: list[str] = []
+        started = time.monotonic()
         for provider in self._health.order(self._providers, lambda p: p.name):
             for attempt in range(1, self._retries + 1):
+                if time.monotonic() - started > self._budget:
+                    errors.append(f"gave up after {self._budget:.0f}s without an answer")
+                    raise TriageError("All vision providers failed: " + "; ".join(errors))
                 try:
                     result = provider.generate(image_b64, mime_type, note)
                     # Tokens are spent even if the output turns out to be invalid.
@@ -398,7 +406,7 @@ def build_default_service(
         "groq": lambda: GroqProvider(config.GROQ_API_KEY, config.GROQ_MODEL)
         if config.GROQ_API_KEY
         else None,
-        "openrouter": lambda: OpenRouterProvider(config.OPENROUTER_API_KEY, config.OPENROUTER_MODEL)
+        "openrouter": lambda: OpenRouterProvider(config.OPENROUTER_API_KEY, config.OPENROUTER_MODEL, timeout=25.0)
         if config.OPENROUTER_API_KEY
         else None,
     }

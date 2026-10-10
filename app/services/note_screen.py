@@ -191,7 +191,7 @@ def build_llm_callers(
                     json={"model": model, "temperature": 0,
                           **({"response_format": {"type": "json_object"}} if json_mode else {}),
                           "messages": [{"role": "user", "content": prompt}]},
-                    timeout=timeout or 30,
+                    timeout=timeout or 15,
                 )
                 r.raise_for_status()
                 return r.json()["choices"][0]["message"]["content"]
@@ -203,7 +203,7 @@ def build_llm_callers(
                     headers={"Authorization": f"Bearer {key}"},
                     json={"model": model, "temperature": 0,
                           "messages": [{"role": "user", "content": prompt}]},
-                    timeout=timeout or 45,
+                    timeout=timeout or 20,
                 )
                 r.raise_for_status()
                 return r.json()["choices"][0]["message"]["content"]
@@ -216,7 +216,7 @@ def build_llm_callers(
                 # Keep the client in a variable: used as a temporary it is closed before the
                 # request is sent ("Cannot send a request, as the client has been closed").
                 client = genai.Client(
-                    api_key=key, **({"http_options": types.HttpOptions(timeout=int(timeout * 1000))} if timeout else {}))
+                    api_key=key, http_options=types.HttpOptions(timeout=int((timeout or 15) * 1000)))
                 response = client.models.generate_content(
                     model=model, contents=prompt,
                     config=types.GenerateContentConfig(

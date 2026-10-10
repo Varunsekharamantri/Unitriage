@@ -74,7 +74,7 @@ Each job has its own preferred order, so no single free tier carries everything:
 
 | Job | Order (env var) | Why |
 | --- | --- | --- |
-| Photo triage | gemini, groq, openrouter (`VISION_PROVIDERS`) | strongest vision first |
+| Photo triage | groq, gemini, openrouter (`VISION_PROVIDERS`) | fastest and most accurate on the evals first |
 | Note screening | groq, openrouter, gemini (`NOTE_LLM_PROVIDERS`) | short text, Groq is fast and exact on the eval |
 | Owner summaries | openrouter, groq, gemini (`SUMMARY_PROVIDERS`) | low stakes, keeps quota for the others |
 

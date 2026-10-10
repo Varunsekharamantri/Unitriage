@@ -26,10 +26,14 @@ def is_transient(exc: BaseException) -> bool:
     or a dropped connection. (A quota error is not: retrying immediately won't help.)"""
     response = getattr(exc, "response", None)
     code = getattr(response, "status_code", None) or getattr(exc, "code", None) or getattr(exc, "status_code", None)
-    if isinstance(code, int) and 500 <= code <= 599:
+    # 503 (overloaded) and 504 (deadline) are not retried: they mean "busy", and asking again at
+    # once just doubles the wait. A plain 500 or a dropped connection often clears on the second try.
+    if code in (500, 502):
         return True
     text = f"{exc.__class__.__name__} {exc}"
-    return any(k in text for k in ("INTERNAL", "UNAVAILABLE", "RemoteProtocolError", "ReadTimeout", "ConnectError"))
+    if "UNAVAILABLE" in text or "DEADLINE_EXCEEDED" in text:
+        return False
+    return any(k in text for k in ("500 INTERNAL", "RemoteProtocolError", "ConnectError"))
 
 
 class ProviderHealth:
