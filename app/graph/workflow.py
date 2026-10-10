@@ -25,8 +25,9 @@ def build_workflow(
     checkpointer: SqliteSaver,
     summarizer=None,
     clear_image: bool = False,
+    retry_window: float = 0.0,
 ):
-    n = TriageNodes(vision, notifier, vault, summarizer, clear_image)
+    n = TriageNodes(vision, notifier, vault, summarizer, clear_image, retry_window)
     g = StateGraph(TicketState)
 
     g.add_node("triage", n.triage)

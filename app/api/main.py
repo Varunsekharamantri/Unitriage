@@ -35,6 +35,7 @@ def create_app(
     vault: Optional[MockVault] = None,
     usage: Optional[UsageTracker] = None,
     notifier: Optional[MockNotifier] = None,
+    background_intake: Optional[bool] = None,
 ) -> FastAPI:
     """Pass workflow/vault/usage/notifier to inject test doubles; otherwise they are
     built on startup."""
@@ -52,6 +53,11 @@ def create_app(
             pool = open_pool(config.DATABASE_URL)
             db = Database(pool)
             db.ensure_schema()
+        # Background assessment is for the real app. An injected workflow (tests) stays synchronous
+        # unless asked, so a response already carries the ticket's state.
+        app.state.background_intake = (
+            background_intake if background_intake is not None else (workflow is None and config.BACKGROUND_INTAKE)
+        )
         app.state.vault = vault or demo_vault()
         app.state.usage = usage or UsageTracker()
         app.state.notifier = notifier or MockNotifier(store=db)
@@ -70,6 +76,7 @@ def create_app(
                 checkpointer,
                 build_summarizer(config.SUMMARY_MODE),
                 clear_image=db is not None,
+                retry_window=config.TRIAGE_RETRY_SECONDS if app.state.background_intake else 0.0,
             )
         else:
             app.state.workflow = workflow

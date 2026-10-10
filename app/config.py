@@ -64,6 +64,10 @@ CHECKPOINT_DB_PATH: str = os.getenv("CHECKPOINT_DB_PATH", "checkpoints.sqlite")
 CONFIDENCE_THRESHOLD: float = float(os.getenv("CONFIDENCE_THRESHOLD", "0.75"))
 # The most seconds photo triage may take in total before the ticket goes to manual review. Each
 # provider call also has its own timeout, so a provider that never answers can't hang a ticket.
+# Accept a photo at once and assess it in the background, retrying while the AI providers are
+# busy (rate limits, outages) for up to TRIAGE_RETRY_SECONDS before a person is asked to review it.
+BACKGROUND_INTAKE: bool = os.getenv("BACKGROUND_INTAKE", "true").lower() in ("1", "true", "yes")
+TRIAGE_RETRY_SECONDS: float = float(os.getenv("TRIAGE_RETRY_SECONDS", "150"))
 TRIAGE_BUDGET_SECONDS: float = float(os.getenv("TRIAGE_BUDGET_SECONDS", "30"))
 VISION_RETRIES_PER_PROVIDER: int = int(os.getenv("VISION_RETRIES_PER_PROVIDER", "2"))
 VAULT_SECRET: str = os.getenv("VAULT_SECRET", "dev-only-secret")

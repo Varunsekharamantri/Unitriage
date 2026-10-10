@@ -249,7 +249,9 @@ const S = {
 };
 // Every page load is a fresh chat: nothing is remembered between refreshes (history stays in the
 // database, but this page only shows what happens after it opened).
-function saveUnit(u) { S.unit = u; }
+// The unit is remembered between refreshes (a contact knows who you are); the chat itself starts empty.
+try { S.unit = localStorage.getItem("unitriage.unit") || null; } catch (_) {}
+function saveUnit(u) { S.unit = u; try { u ? localStorage.setItem("unitriage.unit", u) : localStorage.removeItem("unitriage.unit"); } catch (_) {} }
 const $ = (id) => document.getElementById(id);
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
 const fmtTime = (d) => d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
@@ -261,6 +263,13 @@ function parseUnit(text) {
   const t = text.trim();
   const m = t.match(/\b\d{1,4}\s?[A-Za-z]?\b/) || (/^[A-Za-z0-9-]{1,8}$/.test(t) ? [t] : null);
   return m ? m[0].replace(/\s+/g, "").toUpperCase() : null;
+}
+// A unit the tenant states themselves: "room number 12B", "unit 3A", "flat 12 b", or a bare "12B".
+function extractUnit(text) {
+  const kw = text.match(/\b(?:unit|room|flat|apartment|apt|door|number|no\.?|#)\s*(?:number|no\.?|#|is|:|-)?\s*([0-9]{1,4}\s?[A-Za-z]?)\b/i);
+  if (kw) return kw[1].replace(/\s+/g, "").toUpperCase();
+  const bare = text.match(/\b([0-9]{1,3}[A-Za-z])\b/);
+  return bare ? bare[1].toUpperCase() : null;
 }
 const BOT = "Maintenance assistant";
 function localMsg(sender, body, attachments, keep = true) {
@@ -573,6 +582,22 @@ async function sendMessage() {
     }
     return answerUnit(text);
   }
+  const stated = extractUnit(text);
+  if (stated && stated !== S.unit) {  // they told us their unit (first time, or a different one)
+    if (photo) return sendPhoto(photo, text, stated, true);
+    $("text").value = "";
+    try {
+      await postChat(stated, [{ sender: "tenant", body: text },
+        { sender: "manager", body: `Thanks, I have you down for unit ${stated}. Please send a photo of the problem so I can assess it.` }]);
+      useUnit(stated);
+    } catch (e) {
+      localMsg("tenant", text);
+      if (/unknown unit/i.test(e.message)) { S.ask = { file: null, text: "" }; assistantSays(`I couldn't find a unit "${stated}". Which room or unit number are you in?`); }
+      else addNote("Could not send: " + e.message, true);
+    }
+    render(true); await poll();
+    return;
+  }
   if (!S.unit) {                     // first contact: hold what they sent, and ask who and where they are
     S.ask = { file: photo || null, text: photo ? text : "" };
     localMsg("tenant", text, photo ? [{ kind: "image", src: URL.createObjectURL(photo) }] : [], !photo);
@@ -615,7 +640,7 @@ async function answerUnit(text) {
   try { await postChat(unit, [{ sender: "manager", body: `Thanks, I have you down for unit ${unit}. Please send a photo of the problem so I can assess it.` }]); } catch (_) {}
   render(true); await poll();
 }
-async function sendPhoto(f, text, unit) {
+async function sendPhoto(f, text, unit, tentative) {
   clearPending(); $("text").value = "";
   S.typing = true; render(true);
   const fd = new FormData();
@@ -624,7 +649,13 @@ async function sendPhoto(f, text, unit) {
   try {
     await api("/api/tickets/intake", { method: "POST", body: fd });
     S.local = []; useUnit(unit);
-  } catch (e) { addNote("Could not submit the photo: " + e.message, true); }
+  } catch (e) {
+    if (tentative && /unknown unit/i.test(e.message)) {   // they named a unit we don't have: ask again
+      S.ask = { file: f, text };
+      localMsg("tenant", text, [{ kind: "image", src: URL.createObjectURL(f) }], false);
+      assistantSays(`I couldn't find a unit "${unit}". Which room or unit number is this for?`);
+    } else addNote("Could not submit the photo: " + e.message, true);
+  }
   finally { S.typing = false; render(true); await poll(); }
 }
 

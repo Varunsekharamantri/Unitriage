@@ -68,6 +68,14 @@ startup. With Postgres the photo is kept in the `photos` table and removed from 
 after triage, so checkpoints stay small. Neon's free tier pauses idle databases, so the first
 request after a quiet period can take a couple of seconds.
 
+## When the AI is busy
+
+A photo is accepted at once ("I've got your photo and I'm assessing it now") and assessed in the
+background. If every AI provider is rate-limited or down, the app keeps retrying for up to
+`TRIAGE_RETRY_SECONDS` (default 150) and only then hands the ticket to a person. Set
+`BACKGROUND_INTAKE=false` to assess during the request instead. If the server restarts while a
+ticket is waiting, that ticket stays unassessed and the tenant should send the photo again.
+
 ## How work is spread across AI providers
 
 Each job has its own preferred order, so no single free tier carries everything:

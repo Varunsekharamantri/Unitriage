@@ -8,6 +8,8 @@ Messages: the assistant speaks as the property owner (sender "manager"), so the 
 technician see the owner's name and the owner sees everything in both conversations. Notices
 only the owner should see (the approval card with its links) use sender "system".
 """
+import time
+
 from langgraph.types import interrupt
 
 from app import config
@@ -93,8 +95,12 @@ def _tenant(state: TicketState) -> str:
 
 class TriageNodes:
     def __init__(
-        self, vision: VisionService, notifier: Notifier, vault: MockVault, summarizer=None, clear_image: bool = False
+        self, vision: VisionService, notifier: Notifier, vault: MockVault, summarizer=None, clear_image: bool = False,
+        retry_window: float = 0.0, retry_pause: float = 12.0,
     ):
+        # retry_window: seconds to keep retrying while the AI providers are busy. 0 = try once.
+        self._retry_window = retry_window
+        self._retry_pause = retry_pause
         # clear_image: the photo is saved elsewhere (the database), so don't carry it in every
         # checkpoint of the ticket after triage has looked at it.
         self._clear_image = clear_image
@@ -130,12 +136,22 @@ class TriageNodes:
 
     # --- triage ---------------------------------------------------------
     def triage(self, state: TicketState) -> dict:
+        deadline = time.monotonic() + self._retry_window
         try:
-            assessment = self._vision.triage(
-                state["image_b64"],
-                state.get("image_mime", "image/jpeg"),
-                state.get("description", ""),
-            )
+            while True:
+                try:
+                    assessment = self._vision.triage(
+                        state["image_b64"],
+                        state.get("image_mime", "image/jpeg"),
+                        state.get("description", ""),
+                    )
+                    break
+                except TriageError as exc:
+                    # Busy or rate-limited providers usually recover within a minute: wait and try
+                    # again instead of handing the ticket to a person straight away.
+                    if not exc.retryable or time.monotonic() + self._retry_pause > deadline:
+                        raise
+                    time.sleep(self._retry_pause)
         except TriageError as exc:
             # The photo AI is out, but the tenant's own words can still raise the alarm.
             found = self._vision.screen_note(state.get("description", ""))

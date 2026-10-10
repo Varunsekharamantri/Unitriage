@@ -113,7 +113,12 @@ def build_prompt(note: str = "") -> str:
 
 
 class TriageError(Exception):
-    """Raised when no provider produced a valid assessment."""
+    """Raised when no provider produced a valid assessment. retryable is True when the providers
+    were busy or down (worth trying again shortly), False when the photo itself is the problem."""
+
+    def __init__(self, message: str, retryable: bool = False):
+        super().__init__(message)
+        self.retryable = retryable
 
 
 @dataclass
@@ -369,7 +374,7 @@ class VisionService:
             for attempt in range(1, self._retries + 1):
                 if time.monotonic() - started > self._budget:
                     errors.append(f"gave up after {self._budget:.0f}s without an answer")
-                    raise TriageError("All vision providers failed: " + "; ".join(errors))
+                    raise TriageError("All vision providers failed: " + "; ".join(errors), retryable=True)
                 try:
                     result = provider.generate(image_b64, mime_type, note)
                     # Tokens are spent even if the output turns out to be invalid.
@@ -391,7 +396,7 @@ class VisionService:
                     break
                 errors.append(msg)
                 logger.warning(msg)
-        raise TriageError("All vision providers failed: " + "; ".join(errors))
+        raise TriageError("All vision providers failed: " + "; ".join(errors), retryable=True)
 
 
 def build_default_service(

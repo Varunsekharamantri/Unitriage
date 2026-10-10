@@ -3,7 +3,9 @@ import base64
 import uuid
 from typing import Literal, Optional
 
-from fastapi import APIRouter, File, Form, HTTPException, Query, Request, Response, UploadFile
+import logging
+
+from fastapi import APIRouter, BackgroundTasks, File, Form, HTTPException, Query, Request, Response, UploadFile
 from langgraph.types import Command
 from pydantic import BaseModel, Field, model_validator
 
@@ -64,9 +66,26 @@ def _require_gate(workflow, ticket_id: str, step: str) -> dict:
     return ticket
 
 
+logger = logging.getLogger(__name__)
+
+
+def _assess_in_background(app, state: dict, ticket_id: str) -> None:
+    """Run the ticket's workflow after the tenant has already been answered."""
+    try:
+        app.state.workflow.invoke(state, _config(ticket_id))
+    except Exception:  # never lose a ticket silently
+        logger.exception("ticket %s failed unexpectedly", ticket_id)
+        app.state.notifier.send(
+            "manager", f"Ticket {ticket_id} needs manual review",
+            "Something went wrong while assessing this ticket. Please review it by hand.",
+            ticket_id=ticket_id, sender="system", conversation=tenant_chat(state["tenant_id"]),
+        )
+
+
 @router.post("/tickets/intake", status_code=201)
 def intake(
     request: Request,
+    background_tasks: BackgroundTasks,
     image: UploadFile = File(...),
     tenant_id: str = Form(...),
     unit_id: str = Form(...),
@@ -111,6 +130,14 @@ def intake(
         sender="tenant",
         conversation=tenant_chat(tenant_id),
     )
+    if getattr(request.app.state, "background_intake", False):
+        request.app.state.notifier.send(
+            "tenant", f"Ticket {ticket_id}: received",
+            "Thanks, I've got your photo and I'm assessing it now.",
+            ticket_id=ticket_id, sender="manager", conversation=tenant_chat(tenant_id),
+        )
+        background_tasks.add_task(_assess_in_background, request.app, dict(state), ticket_id)
+        return {"ticket_id": ticket_id, "status": "received", "awaiting": None}
     workflow.invoke(state, _config(ticket_id))
     return _summary(workflow, ticket_id)
 
