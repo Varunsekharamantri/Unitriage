@@ -8,7 +8,7 @@ from fastapi.responses import FileResponse, RedirectResponse
 
 from app import config
 from app.adapters.mock_notifier import MockNotifier
-from app.api import demo
+from app.api import demo, voice
 from app.api.routes import router
 from app.core.photos import PhotoCache
 from app.core.security import MockVault, UnitSecrets
@@ -95,6 +95,7 @@ def create_app(
 
     if config.DEMO_UI:
         app.include_router(demo.router)
+        app.include_router(voice.router)
 
         # "/" and "/demo": all three actors side by side. "/phone?role=tenant|technician|owner":
         # one actor's phone, which is what each frame on that page embeds.
