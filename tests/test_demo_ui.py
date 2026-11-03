@@ -346,3 +346,16 @@ def test_chat_rejects_an_unknown_unit_and_empty_input(client):
     assert client.post("/api/chat", json={"unit_id": "99Z", "messages": [{"sender": "tenant", "body": "hi"}]}).status_code == 422
     assert client.post("/api/chat", json={"unit_id": "12B", "messages": []}).status_code == 422
     assert client.post("/api/chat", json={"unit_id": "12B", "messages": [{"sender": "system", "body": "x"}]}).status_code == 422
+
+
+def test_voice_call_lifecycle(make_client):
+    c = make_client()
+    assert c.get("/api/demo/call").json()["state"] == "idle"
+    assert c.post("/api/demo/call", json={"action": "end"}).status_code == 409
+    call = c.post("/api/demo/call", json={"action": "start", "unit": "12B", "name": "Sam"}).json()
+    assert (call["state"], call["unit"], call["name"]) == ("ringing", "12B", "Sam")
+    assert c.post("/api/demo/call", json={"action": "answer"}).json()["state"] == "active"
+    assert c.post("/api/demo/call", json={"action": "end"}).json()["state"] == "ended"
+    assert c.post("/api/demo/call", json={"action": "start"}).json()["id"] == call["id"] + 1
+    assert c.post("/api/demo/call", json={"action": "decline"}).json()["state"] == "declined"
+    assert c.post("/api/demo/call", json={"action": "bogus"}).status_code == 422
