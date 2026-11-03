@@ -27,7 +27,17 @@ def _need_key() -> None:
 
 
 def _fail(r: httpx.Response) -> HTTPException:
-    return HTTPException(502, f"Sarvam error {r.status_code}")
+    try:
+        err = r.json().get("error") or {}
+        why = err.get("message") or ""
+    except ValueError:
+        why = r.text
+    return HTTPException(502, f"Sarvam error {r.status_code}: {why[:200]}".rstrip(": "))
+
+
+def _audio_type(content_type: str | None) -> str:
+    """The recorder labels clips like 'audio/webm;codecs=opus'; Sarvam wants the plain type."""
+    return (content_type or "audio/webm").split(";")[0].strip() or "audio/webm"
 
 
 @router.get("/status")
@@ -48,7 +58,7 @@ async def speech_to_text(audio: UploadFile = File(...)):
         r = httpx.post(
             f"{BASE}/speech-to-text",
             headers=_headers(),
-            files={"file": (audio.filename or "speech.webm", data, audio.content_type or "audio/webm")},
+            files={"file": (audio.filename or "speech.webm", data, _audio_type(audio.content_type))},
             data={"language_code": config.SARVAM_STT_LANGUAGE},
             timeout=30,
         )
