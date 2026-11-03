@@ -11,8 +11,10 @@ from pydantic import BaseModel, Field, model_validator
 
 from app import config
 from app.adapters.base import tenant_chat
+from app.core.pii import redact
 from app.core.schemas import TicketState
 from app.core.security import photo_attachment, verify_token
+from app.services.chat_reply import fallback
 
 router = APIRouter(prefix="/api")
 
@@ -24,6 +26,9 @@ class QuoteIn(BaseModel):
     ticket_id: str
     quote: float = Field(gt=0)
     eta: str = Field(min_length=1)
+    # Did the AI map the issue correctly (trade and severity)? The technician is asked with every quote request.
+    classification_ok: Optional[bool] = None
+    classification_note: str = Field("", max_length=300)
 
 
 class FeedbackIn(BaseModel):
@@ -90,7 +95,7 @@ def intake(
     tenant_id: str = Form(...),
     unit_id: str = Form(...),
     description: str = Form("", max_length=500),
-    tenant_name: str = Form("", max_length=100),
+    tenant_name: str = Form("", max_length=100),  # accepted for older clients, never stored (personal data)
 ):
     workflow, vault = request.app.state.workflow, request.app.state.vault
     if image.content_type not in ALLOWED_MIME:
@@ -111,11 +116,10 @@ def intake(
     state = TicketState(
         ticket_id=ticket_id,
         tenant_id=tenant_id,
-        tenant_name=tenant_name.strip() or tenant_id,
         unit_id=unit_id,
         image_b64=base64.b64encode(data).decode(),
         image_mime=image.content_type,
-        description=description.strip(),
+        description=redact(description.strip()),
         vault_key=vault_key,
     )
     request.app.state.photos.put(ticket_id, data, image.content_type)
@@ -163,9 +167,33 @@ def chat(request: Request, body: ChatIn):
     chat_id = tenant_chat(f"tenant-{body.unit_id}")
     for m in body.messages:
         request.app.state.notifier.send(
-            "manager" if m.sender == "tenant" else "tenant", "", m.body, sender=m.sender, conversation=chat_id
+            "manager" if m.sender == "tenant" else "tenant", "", redact(m.body), sender=m.sender, conversation=chat_id
         )
     return {"sent": len(body.messages)}
+
+
+class ReplyIn(BaseModel):
+    unit_id: str = Field(min_length=1, max_length=20)
+    message: str = Field(min_length=1, max_length=500)
+    history: list[ChatMessage] = Field(default_factory=list, max_length=8)  # the last few turns, for context
+
+
+@router.post("/chat/reply", status_code=201)
+def chat_reply(request: Request, body: ReplyIn):
+    """A plain message from the tenant, answered by the assistant according to what was said ("thanks",
+    a question, a greeting). Both messages are stored in the tenant's chat with the owner."""
+    try:
+        request.app.state.vault.get(f"vault/{body.unit_id}")
+    except KeyError:
+        raise HTTPException(422, f"Unknown unit {body.unit_id!r}") from None
+    message = redact(body.message.strip())
+    responder = getattr(request.app.state, "chat_responder", None)
+    history = [{"sender": m.sender, "body": redact(m.body)} for m in body.history]
+    reply = responder.reply(message, history) if responder else fallback(message)
+    chat_id = tenant_chat(f"tenant-{body.unit_id}")
+    request.app.state.notifier.send("manager", "", message, sender="tenant", conversation=chat_id)
+    request.app.state.notifier.send("tenant", "", reply, sender="manager", conversation=chat_id)
+    return {"reply": reply}
 
 
 @router.get("/usage")
@@ -206,7 +234,7 @@ def tenant_feedback(request: Request, ticket_id: str, body: FeedbackIn):
     workflow = request.app.state.workflow
     ticket = _require_gate(workflow, ticket_id, "wait_for_feedback")
     # What the tenant said, as a message in their chat with the owner.
-    note = body.note.strip()
+    note = redact(body.note.strip())
     request.app.state.notifier.send(
         "manager",
         "",
@@ -219,7 +247,7 @@ def tenant_feedback(request: Request, ticket_id: str, body: FeedbackIn):
     workflow.invoke(
         Command(resume={
             "resolved": body.resolved,
-            "note": body.note.strip(),
+            "note": note,
             "want_technician": body.want_technician,
         }),
         _config(ticket_id),
@@ -231,9 +259,10 @@ def tenant_feedback(request: Request, ticket_id: str, body: FeedbackIn):
 def technician_quote(request: Request, body: QuoteIn):
     workflow = request.app.state.workflow
     _require_gate(workflow, body.ticket_id, "wait_for_quote")
-    workflow.invoke(
-        Command(resume={"quote": body.quote, "eta": body.eta}), _config(body.ticket_id)
-    )
+    resume = {"quote": body.quote, "eta": body.eta}
+    if body.classification_ok is not None:
+        resume["classification"] = {"ok": body.classification_ok, "note": redact(body.classification_note.strip())}
+    workflow.invoke(Command(resume=resume), _config(body.ticket_id))
     return _summary(workflow, body.ticket_id)
 
 

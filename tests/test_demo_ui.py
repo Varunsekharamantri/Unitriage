@@ -243,21 +243,52 @@ def test_photo_endpoint_rejects_bad_tokens_before_revealing_anything(client):
 # --- the content of the messages -----------------------------------------------
 
 
-def test_owner_card_names_the_tenant_and_unit_but_the_technician_is_not_told_before_approval(client):
+def test_owner_card_names_the_unit_and_no_personal_name_is_stored(client):
     tid = start_ticket(client, name="Priya Sharma")
-    assert client.get(f"/api/tickets/{tid}").json()["tenant_name"] == "Priya Sharma"
+    assert "tenant_name" not in client.get(f"/api/tickets/{tid}").json()
     quote(client, tid)
-    assert "Tenant: Priya Sharma · Unit 12B" in approval_card(client)["body"]
+    assert approval_card(client)["body"].startswith("Unit 12B")
+    assert "Priya" not in json.dumps(feed(client))
     tech = json.dumps(feed(client, viewer="technician"))
     assert "Priya" not in tech and "12B" not in tech
     approve(client)
     dispatch = next(m for m in feed(client, viewer="technician") if m["subject"].startswith("DISPATCH"))
-    assert "tenant: Priya Sharma" in dispatch["body"] and CODE in dispatch["body"]
+    assert "Priya" not in dispatch["body"] and "Unit 12B" in dispatch["body"] and CODE in dispatch["body"]
 
 
-def test_tenant_name_falls_back_to_the_tenant_id(client):
-    tid = start_ticket(client, name="")
-    assert client.get(f"/api/tickets/{tid}").json()["tenant_name"] == "tenant-12B"
+def test_contact_details_are_removed_before_anything_is_stored(client):
+    start_ticket(client, description="Sink leaks. Call me on 98765 43210 or priya@mail.com, my name is Priya Sharma")
+    everything = json.dumps(feed(client))
+    assert "98765" not in everything and "priya@mail.com" not in everything and "Priya Sharma" not in everything
+    assert "[number]" in everything and "[email]" in everything
+    assert "98765" not in json.dumps(client.get("/api/tickets/" + next(
+        m["ticket_id"] for m in feed(client) if m["ticket_id"])).json())
+
+
+def test_chat_reply_answers_what_was_said_and_stores_both_sides(client):
+    r = client.post("/api/chat/reply", json={"unit_id": "12B", "message": "thank you so much"})
+    assert r.status_code == 201 and "welcome" in r.json()["reply"].lower()
+    r = client.post("/api/chat/reply", json={"unit_id": "12B", "message": "my number is 9876543210, the tap drips"})
+    assert "photo" in r.json()["reply"].lower()
+    stored = feed(client, viewer="tenant", conversation="tenant:tenant-12B")
+    assert [m["sender"] for m in stored] == ["tenant", "manager", "tenant", "manager"]
+    assert "9876543210" not in json.dumps(stored)
+    assert client.post("/api/chat/reply", json={"unit_id": "99Z", "message": "hi"}).status_code == 422
+
+
+def test_technician_is_asked_if_the_issue_is_mapped_and_the_answer_is_kept(client):
+    tid = start_ticket(client)
+    rfq = next(m for m in feed(client, viewer="technician") if m["subject"].startswith("Quote request"))
+    assert "correctly mapped" in rfq["body"] and "plumber" in rfq["body"]
+    r = client.post("/api/webhooks/technician-quote", json={
+        "ticket_id": tid, "quote": 175, "eta": "Today 2 PM", "classification_ok": False,
+        "classification_note": "actually an electrician, call 9876543210"})
+    assert r.status_code == 200
+    assert r.json()["classification_check"]["ok"] is False
+    assert "9876543210" not in json.dumps(r.json())
+    stats = client.get("/api/demo/classification").json()
+    assert (stats["checked"], stats["wrong"], stats["accuracy"]) == (1, 1, 0.0)
+    assert any("Technician says: wrong" in m["body"] for m in feed(client, viewer="manager"))
 
 
 def test_emergency_tenant_message_has_trade_specific_safety_advice(client):

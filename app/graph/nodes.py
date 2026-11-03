@@ -90,7 +90,8 @@ def _flag_advice(flags) -> str:
 
 
 def _tenant(state: TicketState) -> str:
-    return state.get("tenant_name") or state["tenant_id"]
+    """How the tenant is named on cards. Never a personal name: records only carry the unit."""
+    return f"Unit {state['unit_id']}"
 
 
 class TriageNodes:
@@ -324,7 +325,8 @@ class TriageNodes:
             "technician",
             f"Quote request for ticket {state['ticket_id']} ({a['severity']}{', SAME DAY' if same_day else ''})",
             f"Trade: {_trade(a['trade'])}. Issue: {_summary(a)}.{notes}\n"
-            "Please reply with a quote and ETA.",
+            f"Our AI classified this as: {a['trade']}, {a['severity']}.\n"
+            "Is the issue correctly mapped? Please say so when you reply with a quote and ETA.",
             state,
             actions=[{"kind": "quote", "label": "Reply with quote"}],
             attachments=[photo_attachment(state["ticket_id"])],
@@ -333,11 +335,14 @@ class TriageNodes:
 
     def wait_for_quote(self, state: TicketState) -> dict:
         reply = interrupt({"step": "wait_for_quote", "ticket_id": state["ticket_id"]})
-        return {
+        out = {
             "quote": float(reply["quote"]),
             "eta": str(reply["eta"]),
             "status": "quote_received",
         }
+        if reply.get("classification"):
+            out["classification_check"] = reply["classification"]
+        return out
 
     def _owner_summary(self, state: TicketState) -> str:
         """The paragraph on the approval card. AI-written when a summarizer is set, and the
@@ -379,11 +384,21 @@ class TriageNodes:
             state,
             sender="technician",
         )
+        check = state.get("classification_check")
+        if check:   # how well did the AI map this? The owner can see the technician's verdict.
+            self._send(
+                "manager",
+                "Classification check",
+                f"AI said: {a['trade']}, {a['severity']}. Technician says: "
+                + ("correct." if check.get("ok") else "wrong" + (f" ({check['note']})." if check.get("note") else ".")),
+                state,
+                sender="technician",
+            )
         # The owner's card, visible to the owner only, with the tenant context and the buttons.
         self._send(
             "manager",
             f"Approval needed: ticket {tid}",
-            f"Tenant: {_tenant(state)} · Unit {state['unit_id']}\n"
+            f"{_tenant(state)}\n"
             f"{self._owner_summary(state)}\n"
             f"Quote: ${state['quote']:.2f}, ETA {state['eta']}.\n"
             f"Approve: {link('approved')}\n"
@@ -453,7 +468,7 @@ class TriageNodes:
         self._send(
             "technician",
             f"DISPATCH: ticket {packet.ticket_id}",
-            f"Unit {packet.unit_number} (tenant: {_tenant(state)}), access code {packet.access_code}. "
+            f"Unit {packet.unit_number}, access code {packet.access_code}. "
             f"{_trade(packet.trade).capitalize()}: {_summary(a)}. Agreed ${packet.quote:.2f}, ETA {packet.eta}.",
             state,
         )

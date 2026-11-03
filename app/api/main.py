@@ -13,6 +13,7 @@ from app.api.routes import router
 from app.core.photos import PhotoCache
 from app.core.security import MockVault, UnitSecrets
 from app.core.usage import UsageTracker
+from app.services.chat_reply import build_chat_responder
 from app.services.summary import build_summarizer
 from app.graph.workflow import build_workflow, get_sqlite_checkpointer
 from app.services.vision_service import build_default_service
@@ -62,6 +63,7 @@ def create_app(
         app.state.usage = usage or UsageTracker()
         app.state.notifier = notifier or MockNotifier(store=db)
         app.state.photos = PhotoCache(db=db)
+        app.state.chat_responder = build_chat_responder() if workflow is None else None
         if workflow is None:
             if pool is not None:
                 checkpointer = PostgresSaver(pool)

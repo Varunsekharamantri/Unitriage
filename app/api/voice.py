@@ -81,7 +81,8 @@ def text_to_speech(body: Speak):
                 "language_code": "en-IN",
                 "model": config.SARVAM_TTS_MODEL,
                 "speaker": config.SARVAM_SPEAKER,
-                "pace": 1.0,
+                "pace": 1.05,
+                "speech_sample_rate": 16000,   # smaller audio, quicker to arrive
                 "output_audio_codec": "wav",
             },
             timeout=30,

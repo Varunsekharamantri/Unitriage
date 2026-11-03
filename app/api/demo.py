@@ -66,3 +66,17 @@ def post_call(body: CallAction, request: Request):
         call = {**call, "state": "ended"}
     request.app.state.call = call
     return call
+
+
+@router.get("/classification")
+def classification(request: Request):
+    """How often technicians said the AI mapped the issue correctly."""
+    checks = [m for m in request.app.state.notifier.sent if m.subject == "Classification check"]
+    wrong = [{"ticket_id": m.ticket_id, "detail": m.body} for m in checks if "Technician says: wrong" in m.body]
+    return {
+        "checked": len(checks),
+        "correct": len(checks) - len(wrong),
+        "wrong": len(wrong),
+        "accuracy": round((len(checks) - len(wrong)) / len(checks), 2) if checks else None,
+        "wrong_cases": wrong,
+    }
