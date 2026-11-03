@@ -86,3 +86,10 @@ TECHNICIAN_NAME: str = os.getenv("TECHNICIAN_NAME", "Sam Rivera")  # the contact
 # (Telegram profile, web login) would.
 DEMO_TENANTS: dict[str, str] = {"12B": "Priya Sharma", "3A": "Rahul Verma"}
 MAX_IMAGE_BYTES: int = int(os.getenv("MAX_IMAGE_BYTES", str(5 * 1024 * 1024)))
+
+# Voice calls use Sarvam (Indian-English speech to text and text to speech) when a key is set; the
+# key stays on the server. Without one the phone falls back to the browser's own speech.
+SARVAM_API_KEY: str = os.getenv("SARVAM_API_KEY", "")
+SARVAM_TTS_MODEL: str = os.getenv("SARVAM_TTS_MODEL", "bulbul:v3")
+SARVAM_SPEAKER: str = os.getenv("SARVAM_SPEAKER", "priya")
+SARVAM_STT_LANGUAGE: str = os.getenv("SARVAM_STT_LANGUAGE", "en-IN")  # "unknown" to auto-detect Hindi/English mixes

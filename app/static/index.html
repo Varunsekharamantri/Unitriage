@@ -728,6 +728,7 @@ async function sendPhoto(f, text, unit, tentative) {
    Browser speech in Indian English: the tenant's words become a normal chat message (same unit check, tickets and
    replies) and every reply is read aloud. The tenant's call shows on the owner's phone like a WhatsApp call. */
 const VOICE = { on: false, live: false, min: false, id: 0, rec: null, speaking: 0, busy: false, wait: null, tick: null, watch: null, since: 0,
+  sarvam: false, stream: null, ctx: null, audio: null, q: Promise.resolve(), gen: 0,
   SR: window.SpeechRecognition || window.webkitSpeechRecognition };
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 // Indian English: prefer an en-IN voice (natural/online ones sound best); fall back to any English voice.
@@ -740,24 +741,48 @@ function pickVoice() {
 }
 if (window.speechSynthesis) speechSynthesis.onvoiceschanged = () => { if (VOICE.on) showVoice(); };
 function showVoice() {
+  if (VOICE.sarvam) { $("callVoice").textContent = "Voice: Sarvam (Indian English)"; return; }
   const v = pickVoice();
   $("callVoice").textContent = v ? `Voice: ${v.name} (${v.lang})` + (/^en[-_]in$/i.test(v.lang) ? "" : " · no Indian English voice installed") : "No English voice found";
 }
 const mmss = (ms) => { const t = Math.floor(ms / 1000); return String(Math.floor(t / 60)).padStart(2, "0") + ":" + String(t % 60).padStart(2, "0"); };
 function callStatus(t) { $("callStatus").textContent = t; $("call").classList.toggle("listening", t === "Listening…"); }
+// Speech goes through Sarvam (natural Indian English, and it waits out pauses) when the server has a key;
+// otherwise through the browser's own speech.
 function voiceSay(text) {
-  if (!VOICE.on || !VOICE.live || !text || !window.speechSynthesis) return;
+  if (!VOICE.on || !VOICE.live || !text) return;
+  if (!VOICE.sarvam && !window.speechSynthesis) return;
   if (!VOICE.min && /photo/i.test(text) && !/chat/i.test(text)) text += " Tap the chat button to attach it. I'll stay on the line.";
   clearTimeout(VOICE.wait); VOICE.busy = false;
   stopListening(); VOICE.speaking++; callStatus("Speaking…");
+  const done = () => { VOICE.speaking = Math.max(0, VOICE.speaking - 1); if (!VOICE.speaking) listen(); };
+  if (!VOICE.sarvam) return browserSay(text, done);
+  const gen = VOICE.gen;
+  VOICE.q = VOICE.q.then(() => gen === VOICE.gen ? sarvamPlay(text) : null)
+    .catch(() => (window.speechSynthesis ? new Promise((res) => browserSay(text, res)) : null))
+    .then(() => { if (gen === VOICE.gen) done(); });
+}
+function browserSay(text, done) {
   const u = new SpeechSynthesisUtterance(text), v = pickVoice();
   u.lang = v ? v.lang : "en-IN"; if (v) u.voice = v; u.rate = 0.95;
-  u.onend = u.onerror = () => { VOICE.speaking = Math.max(0, VOICE.speaking - 1); if (!VOICE.speaking) listen(); };
+  u.onend = u.onerror = done;
   speechSynthesis.speak(u);
+}
+async function sarvamPlay(text) {
+  const r = await fetch("/api/voice/tts", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text }) });
+  if (!r.ok) throw new Error("tts " + r.status);
+  const url = URL.createObjectURL(await r.blob());
+  await new Promise((res, rej) => {
+    const a = new Audio(url); VOICE.audio = a;
+    a.onended = res; a.onerror = () => rej(new Error("audio"));
+    a.play().catch(rej);
+  });
+  URL.revokeObjectURL(url);
 }
 function stopListening() { if (VOICE.rec) { const r = VOICE.rec; VOICE.rec = null; try { r.abort(); } catch (_) {} } }
 function listen() {
   if (!VOICE.on || !VOICE.live || VOICE.speaking || VOICE.busy || S.typing || VOICE.rec) return;
+  if (VOICE.sarvam) return sarvamListen();
   const r = new VOICE.SR(); VOICE.rec = r;
   r.lang = "en-IN"; r.interimResults = true; r.continuous = false;
   let final = "";
@@ -772,16 +797,59 @@ function listen() {
   r.onend = () => {
     if (VOICE.rec !== r) return;
     VOICE.rec = null;
-    const said = final.trim().replace(/(\d)\s+([a-z])\b/gi, "$1$2");   // "12 B" -> "12B"
-    if (!VOICE.on) return;
-    if (!said) { setTimeout(listen, 300); return; }
-    VOICE.busy = true; callStatus("Thinking…");
-    VOICE.wait = setTimeout(() => { VOICE.busy = false; listen(); }, 15000);   // no spoken reply came: listen again
-    $("text").value = said;
-    sendMessage().then(() => { if (!VOICE.speaking && !VOICE.busy) listen(); });
+    if (VOICE.on) heard(final);
   };
   callStatus("Listening…");
   try { r.start(); } catch (_) { VOICE.rec = null; }
+}
+// What the tenant said goes through the normal chat flow.
+function heard(raw) {
+  const said = raw.trim().replace(/(\d)\s+([a-z])\b/gi, "$1$2");   // "12 B" -> "12B"
+  if (!VOICE.on) return;
+  if (!said) { VOICE.busy = false; setTimeout(listen, 300); return; }
+  VOICE.busy = true; callStatus("Thinking…");
+  clearTimeout(VOICE.wait); VOICE.wait = setTimeout(() => { VOICE.busy = false; listen(); }, 15000);   // no spoken reply came: listen again
+  $("callHeard").textContent = said; $("text").value = said;
+  sendMessage().then(() => { if (!VOICE.speaking && !VOICE.busy) listen(); });
+}
+// Record until a real pause: they have finished only after about 1.7 s of quiet, so a breath or a think does not cut them off.
+const PAUSE_MS = 1700;
+function sarvamListen() {
+  const stream = VOICE.stream; if (!stream) return;
+  const ctx = VOICE.ctx || (VOICE.ctx = new (window.AudioContext || window.webkitAudioContext)());
+  const src = ctx.createMediaStreamSource(stream), an = ctx.createAnalyser(); an.fftSize = 1024; src.connect(an);
+  const buf = new Uint8Array(an.fftSize), chunks = [], mr = new MediaRecorder(stream);
+  mr.ondataavailable = (e) => { if (e.data.size) chunks.push(e.data); };
+  const level = () => { an.getByteTimeDomainData(buf); let t = 0; for (const v of buf) { const x = (v - 128) / 128; t += x * x; } return Math.sqrt(t / buf.length); };
+  const t0 = performance.now(), calib = [];
+  let floor = 0.01, spoke = false, lastVoice = 0, stopped = false, aborted = false, timer = null;
+  const stop = (abort) => {
+    if (stopped) return; stopped = true; aborted = !!abort; clearInterval(timer);
+    try { src.disconnect(); } catch (_) {}
+    if (mr.state !== "inactive") mr.stop();
+  };
+  const handle = { abort: () => stop(true) }; VOICE.rec = handle;
+  timer = setInterval(() => {
+    const now = performance.now(), l = level(), age = now - t0;
+    if (age < 400) { calib.push(l); floor = Math.max(0.008, calib.reduce((a, b) => a + b, 0) / calib.length); return; }   // room noise
+    if (l > Math.max(floor * 2.5, 0.025)) { spoke = true; lastVoice = now; callStatus("Listening…"); }
+    if (spoke && now - lastVoice > PAUSE_MS) stop();
+    else if (!spoke && age > 15000) stop();          // nobody spoke: start a fresh recording
+    else if (age > 30000) stop();
+  }, 100);
+  mr.onstop = async () => {
+    if (VOICE.rec === handle) VOICE.rec = null;
+    if (aborted || !VOICE.on) return;
+    if (!spoke) { setTimeout(listen, 200); return; }
+    VOICE.busy = true; callStatus("Thinking…");
+    let text = "";
+    try {
+      const fd = new FormData(); fd.append("audio", new Blob(chunks, { type: mr.mimeType }), "speech." + (/mp4/.test(mr.mimeType) ? "m4a" : "webm"));
+      text = (await api("/api/voice/stt", { method: "POST", body: fd })).transcript || "";
+    } catch (e) { addNote("Could not hear that: " + e.message, true); }
+    VOICE.busy = false; heard(text);
+  };
+  mr.start(); callStatus("Listening…");
 }
 async function callApi(action, extra) {
   return api("/api/demo/call", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action, ...extra }) });
@@ -795,10 +863,16 @@ function setMin(min) {
 }
 async function startCall() {
   if (ROLE !== "tenant" || VOICE.on) return;
-  if (!VOICE.SR || !window.speechSynthesis) { addNote("Voice calls need a browser with speech support, such as Chrome or Edge.", true); return; }
+  try { VOICE.sarvam = !!(await api("/api/voice/status")).sarvam && !!window.MediaRecorder && !!navigator.mediaDevices; } catch (_) { VOICE.sarvam = false; }
+  if (!VOICE.sarvam && (!VOICE.SR || !window.speechSynthesis)) { addNote("Voice calls need a browser with speech support, such as Chrome or Edge.", true); return; }
+  if (VOICE.on) return;
   VOICE.on = true; VOICE.live = false; VOICE.speaking = 0; VOICE.busy = false; VOICE.min = false;
   $("callAvatar").textContent = EMOJI.owner; $("callName").textContent = S.cfg.owner_name;
   $("callHeard").textContent = ""; $("call").classList.add("on"); showVoice(); callStatus("Calling…");
+  if (VOICE.sarvam) {       // ask for the microphone now, while the tap that started the call still counts
+    try { VOICE.stream = await navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true } }); }
+    catch (_) { endCall(false); addNote("Microphone is blocked. Allow it in the browser and try again.", true); return; }
+  }
   let call;
   try { call = await callApi("start", { unit: S.unit, name: (S.unit && S.cfg.tenants[S.unit]) || (S.unit ? "Unit " + S.unit : "New tenant") }); }
   catch (e) { endCall(false); addNote("Could not place the call: " + e.message, true); return; }
@@ -823,7 +897,9 @@ async function startCall() {
                        : "Hi! Which room or unit number are you in?");
 }
 function endCall(notify = true) {
-  const was = VOICE.on; VOICE.on = false; VOICE.live = false; VOICE.min = false;
+  const was = VOICE.on; VOICE.on = false; VOICE.live = false; VOICE.min = false; VOICE.gen++;
+  if (VOICE.audio) { try { VOICE.audio.pause(); } catch (_) {} VOICE.audio = null; }
+  if (VOICE.stream) { VOICE.stream.getTracks().forEach((t) => t.stop()); VOICE.stream = null; }
   clearTimeout(VOICE.wait); clearInterval(VOICE.tick); clearInterval(VOICE.watch); stopListening();
   if (window.speechSynthesis) speechSynthesis.cancel();
   $("call").classList.remove("on", "listening"); $("callBar").classList.remove("on");

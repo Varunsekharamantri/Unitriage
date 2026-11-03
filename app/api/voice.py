@@ -1,0 +1,86 @@
+"""Speech for the tenant's voice call, through Sarvam. The API key never reaches the browser."""
+import base64
+
+import httpx
+from fastapi import APIRouter, File, HTTPException, UploadFile
+from fastapi.responses import Response
+from pydantic import BaseModel, Field
+
+from app import config
+
+router = APIRouter(prefix="/api/voice")
+BASE = "https://api.sarvam.ai"
+MAX_AUDIO_BYTES = 3 * 1024 * 1024
+
+
+class Speak(BaseModel):
+    text: str = Field(min_length=1, max_length=1500)
+
+
+def _headers() -> dict:
+    return {"api-subscription-key": config.SARVAM_API_KEY}
+
+
+def _need_key() -> None:
+    if not config.SARVAM_API_KEY:
+        raise HTTPException(503, "Sarvam is not configured")
+
+
+def _fail(r: httpx.Response) -> HTTPException:
+    return HTTPException(502, f"Sarvam error {r.status_code}")
+
+
+@router.get("/status")
+def status():
+    """Whether the phone should use Sarvam (true) or the browser's own speech (false)."""
+    return {"sarvam": bool(config.SARVAM_API_KEY)}
+
+
+@router.post("/stt")
+async def speech_to_text(audio: UploadFile = File(...)):
+    _need_key()
+    data = await audio.read(MAX_AUDIO_BYTES + 1)
+    if not data:
+        return {"transcript": ""}
+    if len(data) > MAX_AUDIO_BYTES:
+        raise HTTPException(413, "Recording too long")
+    try:
+        r = httpx.post(
+            f"{BASE}/speech-to-text",
+            headers=_headers(),
+            files={"file": (audio.filename or "speech.webm", data, audio.content_type or "audio/webm")},
+            data={"language_code": config.SARVAM_STT_LANGUAGE},
+            timeout=30,
+        )
+    except httpx.HTTPError:
+        raise HTTPException(502, "Could not reach Sarvam")
+    if r.status_code != 200:
+        raise _fail(r)
+    return {"transcript": (r.json().get("transcript") or "").strip()}
+
+
+@router.post("/tts")
+def text_to_speech(body: Speak):
+    _need_key()
+    try:
+        r = httpx.post(
+            f"{BASE}/text-to-speech",
+            headers={**_headers(), "Content-Type": "application/json"},
+            json={
+                "text": body.text,
+                "language_code": "en-IN",
+                "model": config.SARVAM_TTS_MODEL,
+                "speaker": config.SARVAM_SPEAKER,
+                "pace": 1.0,
+                "output_audio_codec": "wav",
+            },
+            timeout=30,
+        )
+    except httpx.HTTPError:
+        raise HTTPException(502, "Could not reach Sarvam")
+    if r.status_code != 200:
+        raise _fail(r)
+    audios = r.json().get("audios") or []
+    if not audios:
+        raise HTTPException(502, "Sarvam returned no audio")
+    return Response(base64.b64decode(audios[0]), media_type="audio/wav")

@@ -359,3 +359,38 @@ def test_voice_call_lifecycle(make_client):
     assert c.post("/api/demo/call", json={"action": "start"}).json()["id"] == call["id"] + 1
     assert c.post("/api/demo/call", json={"action": "decline"}).json()["state"] == "declined"
     assert c.post("/api/demo/call", json={"action": "bogus"}).status_code == 422
+
+
+def test_voice_endpoints_use_sarvam_only_with_a_key(make_client, monkeypatch):
+    import base64
+    from app.api import voice
+
+    c = make_client()
+    monkeypatch.setattr(config, "SARVAM_API_KEY", "")
+    assert c.get("/api/voice/status").json() == {"sarvam": False}
+    assert c.post("/api/voice/tts", json={"text": "hi"}).status_code == 503
+    assert c.post("/api/voice/stt", files={"audio": ("a.webm", b"x", "audio/webm")}).status_code == 503
+
+    monkeypatch.setattr(config, "SARVAM_API_KEY", "k")
+    seen = {}
+
+    class Resp:
+        status_code = 200
+        def __init__(self, body): self._b = body
+        def json(self): return self._b
+
+    def fake_post(url, **kw):
+        seen[url] = kw
+        if url.endswith("/speech-to-text"):
+            return Resp({"transcript": " my sink is leaking "})
+        return Resp({"audios": [base64.b64encode(b"RIFFwav").decode()]})
+
+    monkeypatch.setattr(voice.httpx, "post", fake_post)
+    assert c.get("/api/voice/status").json() == {"sarvam": True}
+    r = c.post("/api/voice/stt", files={"audio": ("a.webm", b"audio", "audio/webm")})
+    assert r.json() == {"transcript": "my sink is leaking"}
+    assert seen[f"{voice.BASE}/speech-to-text"]["headers"]["api-subscription-key"] == "k"
+    r = c.post("/api/voice/tts", json={"text": "Hello"})
+    assert r.content == b"RIFFwav" and r.headers["content-type"] == "audio/wav"
+    assert seen[f"{voice.BASE}/text-to-speech"]["json"]["language_code"] == "en-IN"
+    assert c.post("/api/voice/tts", json={"text": ""}).status_code == 422
