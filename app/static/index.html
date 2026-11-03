@@ -85,6 +85,32 @@
   #callEnd { margin-top: 18px; border: 0; border-radius: 50%; width: 60px; height: 60px; background: var(--danger); color: #fff; cursor: pointer; display: grid; place-items: center; }
   #callEnd svg { width: 28px; height: 28px; fill: currentColor; transform: rotate(135deg); }
   #call.listening .avatar { box-shadow: 0 0 0 8px rgba(37, 211, 102, .35); }
+  #callMin { position: absolute; top: 12px; left: 12px; border: 0; background: var(--panel); color: var(--text); border-radius: 20px; padding: 8px 14px; font: inherit; font-size: 14px; cursor: pointer; }
+  #callVoice { color: var(--muted); font-size: 12px; }
+  /* green bar shown under the header while a call carries on behind the chat */
+  #callBar { display: none; flex: none; align-items: center; gap: 10px; background: var(--green); color: #fff; padding: 7px 16px; font-size: 14px; cursor: pointer; }
+  #callBar.on { display: flex; }
+  #callBar span { flex: 1; }
+  #callBar button { border: 0; border-radius: 14px; background: rgba(255, 255, 255, .25); color: #fff; font: inherit; font-size: 13px; padding: 3px 12px; cursor: pointer; }
+  /* the owner's phone: a WhatsApp-style incoming call, and a bar while the assistant takes the call */
+  #incoming { position: fixed; inset: 0; z-index: 40; display: none; flex-direction: column; align-items: center; justify-content: space-between;
+    background: #0b141a; color: #e9edef; padding: 72px 24px 56px; text-align: center; }
+  #incoming.on { display: flex; }
+  #incoming .lbl { font-size: 14px; color: #8696a0; }
+  #incoming .who { font-size: 28px; margin-top: 6px; }
+  #incoming .av { width: 120px; height: 120px; border-radius: 50%; background: #202c33; display: grid; place-items: center; font-size: 60px; margin: 28px auto 0; }
+  #incoming .sub { color: #8696a0; font-size: 13px; max-width: 80%; }
+  #incoming .btns { display: flex; gap: 72px; }
+  #incoming .btns div { display: flex; flex-direction: column; align-items: center; gap: 8px; font-size: 13px; color: #8696a0; }
+  #incoming button { width: 64px; height: 64px; border: 0; border-radius: 50%; color: #fff; cursor: pointer; display: grid; place-items: center; }
+  #incoming button svg { width: 30px; height: 30px; fill: currentColor; }
+  #incoming .acc { background: #25d366; animation: ring 1.2s infinite; }
+  #incoming .dec { background: #f15c6d; } #incoming .dec svg { transform: rotate(135deg); }
+  @keyframes ring { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.12); } }
+  #liveCall { display: none; position: fixed; top: 0; left: 0; right: 0; z-index: 30; align-items: center; gap: 10px; background: var(--green); color: #fff; padding: 8px 16px; font-size: 14px; }
+  #liveCall.on { display: flex; }
+  #liveCall span { flex: 1; }
+  #liveCall button { border: 0; border-radius: 14px; background: rgba(255, 255, 255, .25); color: #fff; font: inherit; font-size: 13px; padding: 3px 12px; cursor: pointer; }
   .head .who .n { font-size: 16px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
   .head .who .s { font-size: 13px; color: var(--muted); }
   .head select { background: var(--panel); color: var(--text); border: 1px solid var(--line); border-radius: 8px; padding: 6px 8px; font: inherit; }
@@ -206,9 +232,12 @@
       <button class="icon" id="voiceCall" title="Voice call" aria-label="Voice call with the property owner"><svg viewBox="0 0 24 24"><path d="M6 4l3 1 1 4-2 1.5a11 11 0 0 0 5.5 5.5L15 14l4 1 1 3-2 2C10 21 3 14 4 6z"/></svg></button>
       <span class="icon" aria-hidden="true" title="Menu"><svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.2" fill="currentColor"/><circle cx="12" cy="12" r="1.2" fill="currentColor"/><circle cx="12" cy="19" r="1.2" fill="currentColor"/></svg></span>
     </div>
+    <div id="callBar" role="button" tabindex="0" aria-label="Return to the call"><span id="callBarText">Ongoing voice call</span><button id="callBarEnd">End</button></div>
     <div id="call" role="dialog" aria-label="Voice call">
+      <button id="callMin" aria-label="Back to chat while the call continues">💬 Chat</button>
       <div class="avatar" id="callAvatar"></div>
       <div class="n" id="callName"></div>
+      <div id="callVoice"></div>
       <div id="callStatus"></div>
       <div id="callHeard"></div>
       <button id="callEnd" aria-label="End call"><svg viewBox="0 0 24 24"><path d="M6 4l3 1 1 4-2 1.5a11 11 0 0 0 5.5 5.5L15 14l4 1 1 3-2 2C10 21 3 14 4 6z"/></svg></button>
@@ -235,6 +264,17 @@
 </div>
 
 <div id="toast" role="status" aria-live="polite"></div>
+
+<div id="incoming" role="alertdialog" aria-label="Incoming WhatsApp voice call">
+  <div><div class="lbl">🔒 WhatsApp voice call</div><div class="who" id="incName"></div><div class="lbl" id="incLine">Incoming voice call…</div>
+    <div class="av">🧑</div></div>
+  <div class="sub">If you don't pick up, the Unitriage assistant answers for you.</div>
+  <div class="btns">
+    <div><button class="dec" id="incDecline" aria-label="Decline call"><svg viewBox="0 0 24 24"><path d="M6 4l3 1 1 4-2 1.5a11 11 0 0 0 5.5 5.5L15 14l4 1 1 3-2 2C10 21 3 14 4 6z"/></svg></button>Decline</div>
+    <div><button class="acc" id="incAccept" aria-label="Accept call"><svg viewBox="0 0 24 24"><path d="M6 4l3 1 1 4-2 1.5a11 11 0 0 0 5.5 5.5L15 14l4 1 1 3-2 2C10 21 3 14 4 6z"/></svg></button>Accept</div>
+  </div>
+</div>
+<div id="liveCall"><span id="liveText"></span><button id="liveEnd">End call</button></div>
 
 <dialog id="quoteDlg">
   <h2>Reply with quote</h2>
@@ -667,6 +707,7 @@ async function answerUnit(text) {
 async function sendPhoto(f, text, unit, tentative) {
   clearPending(); $("text").value = "";
   S.typing = true; render(true);
+  if (VOICE.on) { stopListening(); voiceSay("Thanks, I'm looking at your photo now."); }
   const fd = new FormData();
   fd.append("image", f); fd.append("tenant_id", "tenant-" + unit); fd.append("unit_id", unit);
   fd.append("tenant_name", S.cfg.tenants[unit] || ""); fd.append("description", text);
@@ -684,24 +725,41 @@ async function sendPhoto(f, text, unit, tentative) {
 }
 
 /* ---------- voice call (tenant <-> property owner only) ----------
-   Browser speech: the tenant's words become a normal chat message (same unit check, tickets and replies),
-   and every reply the owner's assistant writes is read aloud. Only the tenant's phone has a live call button. */
-const VOICE = { on: false, rec: null, speaking: 0, busy: false, wait: null,
+   Browser speech in Indian English: the tenant's words become a normal chat message (same unit check, tickets and
+   replies) and every reply is read aloud. The tenant's call shows on the owner's phone like a WhatsApp call. */
+const VOICE = { on: false, live: false, min: false, id: 0, rec: null, speaking: 0, busy: false, wait: null, tick: null, watch: null, since: 0,
   SR: window.SpeechRecognition || window.webkitSpeechRecognition };
+const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+// Indian English: prefer an en-IN voice (natural/online ones sound best); fall back to any English voice.
+function pickVoice() {
+  const vs = (window.speechSynthesis ? speechSynthesis.getVoices() : []);
+  const lang = (v) => v.lang.replace("_", "-").toLowerCase();
+  const rank = (v) => (lang(v) === "en-in" ? 100 : lang(v).startsWith("en") ? 10 : 0)
+    + (/natural|neural|online/i.test(v.name) ? 20 : 0) + (/google/i.test(v.name) ? 10 : 0) + (/female|neerja|heera|veena|kalpana/i.test(v.name) ? 5 : 0);
+  return vs.filter((v) => rank(v) > 0).sort((a, b) => rank(b) - rank(a))[0] || null;
+}
+if (window.speechSynthesis) speechSynthesis.onvoiceschanged = () => { if (VOICE.on) showVoice(); };
+function showVoice() {
+  const v = pickVoice();
+  $("callVoice").textContent = v ? `Voice: ${v.name} (${v.lang})` + (/^en[-_]in$/i.test(v.lang) ? "" : " · no Indian English voice installed") : "No English voice found";
+}
+const mmss = (ms) => { const t = Math.floor(ms / 1000); return String(Math.floor(t / 60)).padStart(2, "0") + ":" + String(t % 60).padStart(2, "0"); };
 function callStatus(t) { $("callStatus").textContent = t; $("call").classList.toggle("listening", t === "Listening…"); }
 function voiceSay(text) {
-  if (!VOICE.on || !text || !window.speechSynthesis) return;
+  if (!VOICE.on || !VOICE.live || !text || !window.speechSynthesis) return;
+  if (!VOICE.min && /photo/i.test(text) && !/chat/i.test(text)) text += " Tap the chat button to attach it. I'll stay on the line.";
   clearTimeout(VOICE.wait); VOICE.busy = false;
   stopListening(); VOICE.speaking++; callStatus("Speaking…");
-  const u = new SpeechSynthesisUtterance(text);
+  const u = new SpeechSynthesisUtterance(text), v = pickVoice();
+  u.lang = v ? v.lang : "en-IN"; if (v) u.voice = v; u.rate = 0.95;
   u.onend = u.onerror = () => { VOICE.speaking = Math.max(0, VOICE.speaking - 1); if (!VOICE.speaking) listen(); };
   speechSynthesis.speak(u);
 }
 function stopListening() { if (VOICE.rec) { const r = VOICE.rec; VOICE.rec = null; try { r.abort(); } catch (_) {} } }
 function listen() {
-  if (!VOICE.on || VOICE.speaking || VOICE.busy || VOICE.rec) return;
+  if (!VOICE.on || !VOICE.live || VOICE.speaking || VOICE.busy || S.typing || VOICE.rec) return;
   const r = new VOICE.SR(); VOICE.rec = r;
-  r.lang = navigator.language || "en-US"; r.interimResults = true; r.continuous = false;
+  r.lang = "en-IN"; r.interimResults = true; r.continuous = false;
   let final = "";
   r.onresult = (e) => {
     let interim = "";
@@ -725,22 +783,78 @@ function listen() {
   callStatus("Listening…");
   try { r.start(); } catch (_) { VOICE.rec = null; }
 }
-function startCall() {
+async function callApi(action, extra) {
+  return api("/api/demo/call", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ action, ...extra }) });
+}
+// The call carries on behind the chat: the tenant can go back to attach a photo and the assistant keeps talking.
+function setMin(min) {
+  VOICE.min = min;
+  $("call").classList.toggle("on", VOICE.on && !min);
+  $("callBar").classList.toggle("on", VOICE.on && min);
+  if (min) $("text").focus();
+}
+async function startCall() {
   if (ROLE !== "tenant" || VOICE.on) return;
   if (!VOICE.SR || !window.speechSynthesis) { addNote("Voice calls need a browser with speech support, such as Chrome or Edge.", true); return; }
-  VOICE.on = true; VOICE.speaking = 0; VOICE.busy = false;
+  VOICE.on = true; VOICE.live = false; VOICE.speaking = 0; VOICE.busy = false; VOICE.min = false;
   $("callAvatar").textContent = EMOJI.owner; $("callName").textContent = S.cfg.owner_name;
-  $("callHeard").textContent = ""; $("call").classList.add("on");
+  $("callHeard").textContent = ""; $("call").classList.add("on"); showVoice(); callStatus("Calling…");
+  let call;
+  try { call = await callApi("start", { unit: S.unit, name: (S.unit && S.cfg.tenants[S.unit]) || (S.unit ? "Unit " + S.unit : "New tenant") }); }
+  catch (e) { endCall(false); addNote("Could not place the call: " + e.message, true); return; }
+  VOICE.id = call.id; callStatus("Ringing…");
+  // The owner's phone rings. If they accept it connects at once; if they decline it stops;
+  // otherwise the assistant answers on their behalf after a few seconds.
+  for (let i = 0; i < 8 && VOICE.on; i++) {
+    await sleep(500);
+    let c = null; try { c = await api("/api/demo/call"); } catch (_) {}
+    if (!c || c.id !== VOICE.id) continue;
+    if (c.state === "active") break;
+    if (c.state === "declined" || c.state === "ended") { callStatus("Call declined"); await sleep(1200); endCall(false); addNote("The property owner declined the call.", false); return; }
+  }
+  if (!VOICE.on) return;
+  try { await callApi("answer"); } catch (_) {}
+  VOICE.live = true; VOICE.since = Date.now(); callStatus("Connected");
+  VOICE.tick = setInterval(() => { $("callBarText").textContent = "Ongoing voice call · " + mmss(Date.now() - VOICE.since); }, 1000);
+  VOICE.watch = setInterval(async () => {          // the owner can hang up from their phone
+    try { const c = await api("/api/demo/call"); if (c.id !== VOICE.id || c.state !== "active") endCall(false); } catch (_) {}
+  }, 1500);
   assistantSays(S.unit ? "Hi, this is " + S.cfg.owner_name + "'s assistant. Tell me what's wrong, or send a photo."
                        : "Hi! Which room or unit number are you in?");
 }
-function endCall() {
-  VOICE.on = false; clearTimeout(VOICE.wait); stopListening();
+function endCall(notify = true) {
+  const was = VOICE.on; VOICE.on = false; VOICE.live = false; VOICE.min = false;
+  clearTimeout(VOICE.wait); clearInterval(VOICE.tick); clearInterval(VOICE.watch); stopListening();
   if (window.speechSynthesis) speechSynthesis.cancel();
-  $("call").classList.remove("on", "listening");
+  $("call").classList.remove("on", "listening"); $("callBar").classList.remove("on");
+  if (was && notify) callApi("end").catch(() => {});
 }
-if (ROLE === "tenant") { $("voiceCall").addEventListener("click", startCall); $("callEnd").addEventListener("click", endCall); }
-else { $("voiceCall").tabIndex = -1; $("voiceCall").setAttribute("aria-hidden", "true"); }
+if (ROLE === "tenant") {
+  $("voiceCall").addEventListener("click", startCall);
+  $("callEnd").addEventListener("click", () => endCall());
+  $("callMin").addEventListener("click", () => setMin(true));
+  $("callBar").addEventListener("click", () => setMin(false));
+  $("callBarEnd").addEventListener("click", (e) => { e.stopPropagation(); endCall(); });
+} else { $("voiceCall").tabIndex = -1; $("voiceCall").setAttribute("aria-hidden", "true"); }
+
+/* ---------- the owner's phone: incoming call ---------- */
+async function pollCall() {
+  let c; try { c = await api("/api/demo/call"); } catch (_) { return; }
+  const ringing = c.state === "ringing", active = c.state === "active";
+  $("incoming").classList.toggle("on", ringing);
+  $("liveCall").classList.toggle("on", active);
+  if (ringing) {
+    $("incName").textContent = c.name || "Tenant";
+    $("incLine").textContent = c.unit ? "Unit " + c.unit + " · incoming voice call…" : "Incoming voice call…";
+  }
+  if (active) $("liveText").textContent = "🎙 On a call with " + (c.name || "Tenant") + " · the assistant is talking";
+}
+if (ROLE === "manager") {
+  $("incAccept").addEventListener("click", async () => { try { await callApi("answer"); } catch (_) {} pollCall(); });
+  $("incDecline").addEventListener("click", async () => { try { await callApi("decline"); } catch (_) {} pollCall(); });
+  $("liveEnd").addEventListener("click", async () => { try { await callApi("end"); } catch (_) {} pollCall(); });
+  setInterval(pollCall, 1000);
+}
 
 /* ---------- start ---------- */
 if (ROLE !== "manager") document.body.classList.remove("nochat");
