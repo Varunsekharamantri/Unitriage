@@ -5,16 +5,17 @@ from typing import Literal, Optional
 
 import logging
 
-from fastapi import APIRouter, BackgroundTasks, File, Form, HTTPException, Query, Request, Response, UploadFile
+from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, HTTPException, Query, Request, Response, UploadFile
 from langgraph.types import Command
 from pydantic import BaseModel, Field, model_validator
 
 from app import config
 from app.adapters.base import tenant_chat
 from app.core.pii import redact
+from app.core.ratelimit import limit
 from app.core.schemas import TicketState
 from app.core.security import photo_attachment, verify_token
-from app.services.chat_reply import fallback
+from app.services.chat_reply import respond
 
 router = APIRouter(prefix="/api")
 
@@ -87,7 +88,7 @@ def _assess_in_background(app, state: dict, ticket_id: str) -> None:
         )
 
 
-@router.post("/tickets/intake", status_code=201)
+@router.post("/tickets/intake", status_code=201, dependencies=[Depends(limit("intake", 12))])
 def intake(
     request: Request,
     background_tasks: BackgroundTasks,
@@ -156,7 +157,7 @@ class ChatIn(BaseModel):
     messages: list[ChatMessage] = Field(min_length=1, max_length=8)
 
 
-@router.post("/chat", status_code=201)
+@router.post("/chat", status_code=201, dependencies=[Depends(limit("chat", 40))])
 def chat(request: Request, body: ChatIn):
     """Plain messages in a tenant's chat, with no photo or ticket: a question, the unit number,
     the assistant's reply. They reach the owner's phone like any other message."""
@@ -178,7 +179,7 @@ class ReplyIn(BaseModel):
     history: list[ChatMessage] = Field(default_factory=list, max_length=8)  # the last few turns, for context
 
 
-@router.post("/chat/reply", status_code=201)
+@router.post("/chat/reply", status_code=201, dependencies=[Depends(limit("chat", 40))])
 def chat_reply(request: Request, body: ReplyIn):
     """A plain message from the tenant, answered by the assistant according to what was said ("thanks",
     a question, a greeting). Both messages are stored in the tenant's chat with the owner."""
@@ -189,7 +190,8 @@ def chat_reply(request: Request, body: ReplyIn):
     message = redact(body.message.strip())
     responder = getattr(request.app.state, "chat_responder", None)
     history = [{"sender": m.sender, "body": redact(m.body)} for m in body.history]
-    reply = responder.reply(message, history) if responder else fallback(message)
+    vault = request.app.state.vault
+    reply = respond(responder, message, history, vault.all_codes() if hasattr(vault, "all_codes") else ())
     chat_id = tenant_chat(f"tenant-{body.unit_id}")
     request.app.state.notifier.send("manager", "", message, sender="tenant", conversation=chat_id)
     request.app.state.notifier.send("tenant", "", reply, sender="manager", conversation=chat_id)

@@ -1,0 +1,80 @@
+[
+ {
+  "text": "call me on 98765 43210 about unit 12B",
+  "remove": [
+   "98765 43210"
+  ],
+  "keep": [
+   "12B"
+  ]
+ },
+ {
+  "text": "mail priya.s@gmail.com please",
+  "remove": [
+   "priya.s@gmail.com"
+  ],
+  "keep": []
+ },
+ {
+  "text": "my name is Priya Sharma, sink leaks",
+  "remove": [
+   "Priya Sharma"
+  ],
+  "keep": [
+   "sink leaks"
+  ]
+ },
+ {
+  "text": "pay at ravi@okicici",
+  "remove": [
+   "ravi@okicici"
+  ],
+  "keep": []
+ },
+ {
+  "text": "PAN ABCDE1234F",
+  "remove": [
+   "ABCDE1234F"
+  ],
+  "keep": []
+ },
+ {
+  "text": "aadhaar 1234 5678 9012",
+  "remove": [
+   "1234 5678 9012"
+  ],
+  "keep": []
+ },
+ {
+  "text": "+91-98765-43210",
+  "remove": [
+   "98765-43210"
+  ],
+  "keep": []
+ },
+ {
+  "text": "room 3A tap is dripping",
+  "remove": [],
+  "keep": [
+   "3A",
+   "tap is dripping"
+  ]
+ },
+ {
+  "text": "flat 12 B, 2 taps and 3 sockets are faulty",
+  "remove": [],
+  "keep": [
+   "12 B",
+   "2 taps",
+   "3 sockets"
+  ]
+ },
+ {
+  "text": "it started 5 days ago, floor 4",
+  "remove": [],
+  "keep": [
+   "5 days",
+   "floor 4"
+  ]
+ }
+]

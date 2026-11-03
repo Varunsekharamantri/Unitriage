@@ -12,6 +12,8 @@ __pycache__/
 # evaluation photos are third-party (Unsplash / Wikimedia licences) or your own tenants' pictures:
 # keep them out of a public repository
 evals/images/
+# your own recordings for the speech-to-text eval
+evals/audio/
 
 # local tooling
 .claude/

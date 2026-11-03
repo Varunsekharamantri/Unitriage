@@ -11,6 +11,7 @@ from app.adapters.mock_notifier import MockNotifier
 from app.api import demo, voice
 from app.api.routes import router
 from app.core.photos import PhotoCache
+from app.core.ratelimit import RateLimiter
 from app.core.security import MockVault, UnitSecrets
 from app.core.usage import UsageTracker
 from app.services.chat_reply import build_chat_responder
@@ -63,6 +64,7 @@ def create_app(
         app.state.usage = usage or UsageTracker()
         app.state.notifier = notifier or MockNotifier(store=db)
         app.state.photos = PhotoCache(db=db)
+        app.state.limiter = RateLimiter(enabled=config.RATE_LIMIT_ENABLED)
         app.state.chat_responder = build_chat_responder() if workflow is None else None
         if workflow is None:
             if pool is not None:

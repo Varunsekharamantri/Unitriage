@@ -43,6 +43,10 @@ class MockVault:
     def put(self, vault_key: str, secrets: UnitSecrets) -> None:
         self._secrets[vault_key] = secrets
 
+    def all_codes(self) -> list:
+        """Every access code held: the guardrails use them to be sure none is ever repeated in a reply."""
+        return [s.access_code for s in self._secrets.values()]
+
     def get(self, vault_key: str) -> UnitSecrets:
         try:
             return self._secrets[vault_key]

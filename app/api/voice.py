@@ -1,12 +1,15 @@
 """Speech for the tenant's voice call, through Sarvam. The API key never reaches the browser."""
 import base64
+import threading
+from datetime import date
 
 import httpx
-from fastapi import APIRouter, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
 from fastapi.responses import Response
 from pydantic import BaseModel, Field
 
 from app import config
+from app.core.ratelimit import limit
 
 router = APIRouter(prefix="/api/voice")
 BASE = "https://api.sarvam.ai"
@@ -21,9 +24,21 @@ def _headers() -> dict:
     return {"api-subscription-key": config.SARVAM_API_KEY}
 
 
+_budget = {"day": None, "used": 0}
+_lock = threading.Lock()
+
+
 def _need_key() -> None:
+    """Sarvam must be configured, and today's shared budget of speech requests not spent."""
     if not config.SARVAM_API_KEY:
         raise HTTPException(503, "Sarvam is not configured")
+    with _lock:
+        today = date.today()
+        if _budget["day"] != today:
+            _budget.update(day=today, used=0)
+        if _budget["used"] >= config.SARVAM_DAILY_LIMIT:
+            raise HTTPException(429, "Daily voice limit reached")
+        _budget["used"] += 1
 
 
 def _fail(r: httpx.Response) -> HTTPException:
@@ -46,7 +61,7 @@ def status():
     return {"sarvam": bool(config.SARVAM_API_KEY)}
 
 
-@router.post("/stt")
+@router.post("/stt", dependencies=[Depends(limit("voice", 40))])
 async def speech_to_text(audio: UploadFile = File(...)):
     _need_key()
     data = await audio.read(MAX_AUDIO_BYTES + 1)
@@ -69,7 +84,7 @@ async def speech_to_text(audio: UploadFile = File(...)):
     return {"transcript": (r.json().get("transcript") or "").strip()}
 
 
-@router.post("/tts")
+@router.post("/tts", dependencies=[Depends(limit("voice", 40))])
 def text_to_speech(body: Speak):
     _need_key()
     try:
