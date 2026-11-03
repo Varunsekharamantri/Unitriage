@@ -387,9 +387,10 @@ def test_voice_endpoints_use_sarvam_only_with_a_key(make_client, monkeypatch):
 
     monkeypatch.setattr(voice.httpx, "post", fake_post)
     assert c.get("/api/voice/status").json() == {"sarvam": True}
-    r = c.post("/api/voice/stt", files={"audio": ("a.webm", b"audio", "audio/webm")})
+    r = c.post("/api/voice/stt", files={"audio": ("a.webm", b"audio", "audio/webm;codecs=opus")})
     assert r.json() == {"transcript": "my sink is leaking"}
     assert seen[f"{voice.BASE}/speech-to-text"]["headers"]["api-subscription-key"] == "k"
+    assert seen[f"{voice.BASE}/speech-to-text"]["files"]["file"][2] == "audio/webm"
     r = c.post("/api/voice/tts", json={"text": "Hello"})
     assert r.content == b"RIFFwav" and r.headers["content-type"] == "audio/wav"
     assert seen[f"{voice.BASE}/text-to-speech"]["json"]["language_code"] == "en-IN"
