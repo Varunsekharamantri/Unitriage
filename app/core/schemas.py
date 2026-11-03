@@ -74,7 +74,6 @@ class TicketState(TypedDict, total=False):
 
     ticket_id: str
     tenant_id: str
-    tenant_name: str  # display name from the intake channel; falls back to tenant_id
     unit_id: str
     image_b64: str
     image_mime: str
@@ -86,6 +85,8 @@ class TicketState(TypedDict, total=False):
     assessment: Optional[dict]  # VisualTriageAssessment.model_dump()
     quote: Optional[float]
     eta: Optional[str]
+    # The technician's verdict on the AI's classification: {"ok": bool, "note": str}. Lets the owner see how well it maps.
+    classification_check: Optional[dict]
     approval: Optional[str]  # "approved" | "rejected"
     vault_key: str  # reference to the secret, never the secret itself
     dispatch_packet: Optional[dict]

@@ -167,6 +167,9 @@
   dialog label { display: block; font-size: 12px; color: var(--green); margin: 10px 0 4px; font-weight: 600; }
   dialog input { width: 100%; border: 0; border-bottom: 2px solid var(--line); background: none; color: var(--text); font: inherit; padding: 6px 0; outline: 0; }
   dialog input:focus { border-color: var(--green); }
+  dialog select { width: 100%; border: 0; border-bottom: 2px solid var(--line); background: none; color: var(--text); font: inherit; padding: 6px 0; outline: 0; }
+  dialog select:focus { border-color: var(--green); }
+  dialog select option { background: var(--panel); }
   dialog .btns { display: flex; justify-content: flex-end; gap: 8px; margin-top: 18px; }
   dialog .btns button { border: 0; border-radius: 18px; padding: 8px 18px; font: inherit; font-weight: 500; cursor: pointer; background: none; color: var(--green); }
   dialog .btns button.primary { background: var(--green); color: #fff; }
@@ -284,6 +287,13 @@
     <input id="quoteAmt" type="number" min="1" step="0.01" required placeholder="175">
     <label for="quoteEta">Arrival time (ETA)</label>
     <input id="quoteEta" type="text" required placeholder="Today 2 PM">
+    <label for="quoteMap">Is the issue correctly mapped?</label>
+    <select id="quoteMap" required>
+      <option value="" disabled selected>Choose…</option>
+      <option value="yes">Yes, the trade and severity are right</option>
+      <option value="no">No, it was classified wrongly</option>
+    </select>
+    <input id="quoteMapNote" type="text" maxlength="300" placeholder="What is it actually? (trade, severity)" hidden>
     <div class="btns"><button type="button" id="quoteCancel">Cancel</button><button class="primary" type="submit">Send</button></div>
   </form>
 </dialog>
@@ -588,8 +598,9 @@ let quoteTicket = null;
 function openQuote(m) {
   quoteTicket = m.ticket_id;
   $("quoteFor").textContent = "Ticket " + m.ticket_id;
-  $("quoteForm").reset(); $("quoteDlg").showModal(); $("quoteAmt").focus();
+  $("quoteForm").reset(); $("quoteMapNote").hidden = true; $("quoteDlg").showModal(); $("quoteAmt").focus();
 }
+$("quoteMap").addEventListener("change", () => { $("quoteMapNote").hidden = $("quoteMap").value !== "no"; });
 $("quoteCancel").addEventListener("click", () => $("quoteDlg").close());
 $("quoteForm").addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -597,7 +608,8 @@ $("quoteForm").addEventListener("submit", async (e) => {
   $("quoteDlg").close();
   try {
     await api("/api/webhooks/technician-quote", { method: "POST", headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ticket_id: quoteTicket, quote: amount, eta }) });
+      body: JSON.stringify({ ticket_id: quoteTicket, quote: amount, eta, classification_ok: $("quoteMap").value === "yes",
+        classification_note: $("quoteMap").value === "no" ? $("quoteMapNote").value.trim() : "" }) });
     S.awaiting[quoteTicket] = "wait_for_approval";
   } catch (err) { addNote(err.message, true); }
   render(false); poll();
@@ -676,8 +688,10 @@ async function sendMessage() {
   $("text").value = "";
   if (!ticketId) {
     try {
-      await postChat(S.unit, [{ sender: "tenant", body: text },
-        { sender: "manager", body: "To report a new issue, please send a photo of the problem so I can assess it." }]);
+      const history = S.msgs.filter((m) => m.conversation === currentConv() && m.body && m.sender !== "system").slice(-4)
+        .map((m) => ({ sender: m.sender === "tenant" ? "tenant" : "manager", body: cleanBody(m.body).slice(0, 500) })).filter((m) => m.body);
+      await api("/api/chat/reply", { method: "POST", headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ unit_id: S.unit, message: text, history }) });
     } catch (e) { addNote("Could not send: " + e.message, true); }
     await poll();
     return;
@@ -812,8 +826,8 @@ function heard(raw) {
   $("callHeard").textContent = said; $("text").value = said;
   sendMessage().then(() => { if (!VOICE.speaking && !VOICE.busy) listen(); });
 }
-// Record until a real pause: they have finished only after about 1.7 s of quiet, so a breath or a think does not cut them off.
-const PAUSE_MS = 1700;
+// Record until a real pause: they have finished only after about 1.3 s of quiet, so a breath or a think does not cut them off.
+const PAUSE_MS = 1300;
 function sarvamListen() {
   const stream = VOICE.stream; if (!stream) return;
   const ctx = VOICE.ctx || (VOICE.ctx = new (window.AudioContext || window.webkitAudioContext)());
