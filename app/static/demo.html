@@ -18,6 +18,13 @@
   .flow { display: flex; flex-wrap: wrap; justify-content: center; gap: 6px 10px; margin: 18px auto 4px; padding: 0 16px; max-width: 1100px; }
   .flow span { background: var(--card); border-radius: 999px; padding: 5px 12px; font-size: 13px; box-shadow: 0 1px 2px rgba(0,0,0,.12); }
   .flow span b { color: var(--green); margin-right: 4px; }
+  .engine { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px 14px; margin: 14px auto 0; padding: 0 16px; }
+  .engine .lbl { font-weight: 600; }
+  .engine .seg { display: inline-flex; background: var(--card); border-radius: 999px; padding: 3px; box-shadow: 0 1px 2px rgba(0,0,0,.12); }
+  .engine button { border: 0; background: none; color: var(--text); font: inherit; padding: 6px 16px; border-radius: 999px; cursor: pointer; }
+  .engine button[aria-pressed="true"] { background: var(--green); color: #fff; }
+  .engine button:disabled { opacity: .45; cursor: not-allowed; }
+  .engine .hint { color: var(--muted); font-size: 12.5px; }
   .stage { display: flex; justify-content: center; align-items: flex-start; gap: 34px; padding: 22px 16px 40px; flex-wrap: wrap; }
   .phone { width: 380px; }
   .phone .who { text-align: center; font-weight: 700; font-size: 15px; margin-bottom: 4px; }
@@ -38,6 +45,14 @@
   <span><b>4</b>Owner approves in the technician chat</span>
   <span><b>5</b>Technician gets the access code</span>
 </div>
+<div class="engine" role="group" aria-label="Voice call engine">
+  <span class="lbl">🎙 Voice call engine</span>
+  <span class="seg">
+    <button id="engBrowser" aria-pressed="false">Browser speech</button>
+    <button id="engSarvam" aria-pressed="false">Sarvam AI</button>
+  </span>
+  <span class="hint" id="engHint">Applies to the next call.</span>
+</div>
 <div class="stage">
   <section class="phone">
     <div class="who">🧑 Tenant</div>
@@ -55,5 +70,24 @@
     <div class="frame"><iframe id="technician" src="/phone?role=technician" title="Technician phone"></iframe></div>
   </section>
 </div>
+<script>
+/* Which speech engine the tenant's voice call uses. The phones are same-origin iframes, so they read this
+   choice from localStorage when a call starts. Sarvam needs a server key; without one it is switched off. */
+const KEY = "unitriage.voiceEngine";
+const get = () => { try { return localStorage.getItem(KEY); } catch (_) { return null; } };
+let sarvamOk = false;
+function show() {
+  const use = sarvamOk && get() !== "browser" ? "sarvam" : "browser";
+  document.getElementById("engSarvam").setAttribute("aria-pressed", String(use === "sarvam"));
+  document.getElementById("engBrowser").setAttribute("aria-pressed", String(use === "browser"));
+  document.getElementById("engSarvam").disabled = !sarvamOk;
+  document.getElementById("engHint").textContent = sarvamOk ? "Applies to the next call." : "Sarvam is not set up on the server (no API key), so calls use browser speech.";
+}
+function choose(v) { try { localStorage.setItem(KEY, v); } catch (_) {} show(); }
+document.getElementById("engSarvam").addEventListener("click", () => choose("sarvam"));
+document.getElementById("engBrowser").addEventListener("click", () => choose("browser"));
+fetch("/api/voice/status").then((r) => r.json()).then((s) => { sarvamOk = !!s.sarvam; show(); }).catch(show);
+show();
+</script>
 </body>
 </html>

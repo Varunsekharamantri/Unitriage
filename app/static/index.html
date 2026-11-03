@@ -877,7 +877,8 @@ function setMin(min) {
 }
 async function startCall() {
   if (ROLE !== "tenant" || VOICE.on) return;
-  try { VOICE.sarvam = !!(await api("/api/voice/status")).sarvam && !!window.MediaRecorder && !!navigator.mediaDevices; } catch (_) { VOICE.sarvam = false; }
+  let engine = null; try { engine = localStorage.getItem("unitriage.voiceEngine"); } catch (_) {}   // the demo page's toggle
+  try { VOICE.sarvam = !!(await api("/api/voice/status")).sarvam && engine !== "browser" && !!window.MediaRecorder && !!navigator.mediaDevices; } catch (_) { VOICE.sarvam = false; }
   if (!VOICE.sarvam && (!VOICE.SR || !window.speechSynthesis)) { addNote("Voice calls need a browser with speech support, such as Chrome or Edge.", true); return; }
   if (VOICE.on) return;
   VOICE.on = true; VOICE.live = false; VOICE.speaking = 0; VOICE.busy = false; VOICE.min = false;
