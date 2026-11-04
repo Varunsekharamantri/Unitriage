@@ -485,3 +485,37 @@ def test_a_call_ends_when_it_runs_too_long_or_its_phone_goes_quiet(make_client, 
     c.post("/api/demo/call", json={"action": "start"})
     time.sleep(0.05)
     assert c.get("/api/demo/call").json()["state"] == "ended"          # longer than the maximum
+
+
+# --- photos that are not a maintenance problem -------------------------------------------------------------
+
+SELFIE = {"severity": "minor", "confidence": 0.9, "trade": "none", "is_safe_for_diy": False,
+          "summary": "A person taking a selfie", "subject": "not_a_home"}
+SPOTLESS = {**SELFIE, "summary": "A clean white wall", "subject": "no_issue_visible"}
+
+
+def test_an_unrelated_photo_never_becomes_a_ticket(make_client):
+    c = make_client(SELFIE)
+    tid = start_ticket(c)
+    assert c.get(f"/api/tickets/{tid}").json()["status"] == "not_a_maintenance_issue"
+    tenant = [m for m in feed(c, viewer="tenant") if m["sender"] == "manager"]
+    assert any("doesn't look like a home maintenance issue" in m["body"] for m in tenant)
+    assert feed(c, viewer="technician") == []                      # no quote request
+    assert not any(m["actions"] for m in feed(c, viewer="manager"))  # no approval card
+
+
+def test_a_spotless_photo_asks_for_a_description_and_a_described_one_goes_on(make_client):
+    c = make_client(SPOTLESS)
+    tid = start_ticket(c)
+    assert c.get(f"/api/tickets/{tid}").json()["status"] == "not_a_maintenance_issue"
+    assert any("can't see a problem" in m["body"] for m in feed(c, viewer="tenant"))
+    c2 = make_client(SPOTLESS)
+    start_ticket(c2, description="the tap drips when you turn it off")
+    assert any(m["subject"].startswith("Quote request") for m in feed(c2, viewer="technician"))
+
+
+def test_a_reported_danger_overrides_an_unrelated_photo():
+    from app.graph.edges import route_after_triage
+    state = {"assessment": {"severity": "minor", "is_safe_for_diy": False, "ambiguous": False, "subject": "not_a_home"}}
+    assert route_after_triage(state) == "not_relevant"
+    assert route_after_triage({**state, "note_flags": ["gas"]}) == "contractor"

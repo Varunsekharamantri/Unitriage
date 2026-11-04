@@ -24,10 +24,15 @@ class Evidence(BaseModel):
     note_matches_photo: Optional[bool] = None
 
 
+# What the photo is of. Only "home_issue" can become a ticket: anything else is sent back to the tenant.
+Subject = Literal["home_issue", "no_issue_visible", "not_a_home"]
+
+
 class TriageObservation(BaseModel):
     """The vision model's raw output: what it sees, not what to do about it."""
 
     summary: str
+    subject: Subject = "home_issue"
     trade: Trade
     confidence: float = Field(ge=0.0, le=1.0)
     evidence: Evidence
@@ -41,6 +46,7 @@ class VisualTriageAssessment(BaseModel):
     trade: Trade
     is_safe_for_diy: bool
     summary: str
+    subject: Subject = "home_issue"
     ambiguous: bool = False
     # Present when severity was derived from evidence (always, in production).
     evidence: Optional[dict] = None

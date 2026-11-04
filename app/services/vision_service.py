@@ -39,6 +39,7 @@ description, so inflating or softening anything here corrupts its result.
 Return ONLY a JSON object:
 {
   "summary": "one short, factual sentence about what the photo shows",
+  "subject": "home_issue" | "no_issue_visible" | "not_a_home",
   "trade": "plumber" | "electrician" | "hvac" | "general" | "pest" | "restoration" | "none",
   "confidence": a number from 0 to 1 for how sure you are about what you see,
   "evidence": {
@@ -52,6 +53,15 @@ Return ONLY a JSON object:
     "note_matches_photo": true | false | null
   }
 }
+
+How to fill in "subject" (decide this first):
+- "home_issue": the photo shows a defect, damage, leak, malfunction or hazard in a home, building, fixture or appliance.
+- "no_issue_visible": it is a home, fixture or appliance, but nothing is visibly wrong with it (a clean working tap,
+  an ordinary wall, a tidy room).
+- "not_a_home": it is not about a home's condition at all: people or selfies, pets, food, screenshots, documents,
+  memes, vehicles, landscapes, products, or a blank, black or unreadable image.
+For "no_issue_visible" and "not_a_home" leave the evidence at its quietest values (water "none", damage "none", every
+flag false) and set trade to "none". Never invent a problem to fit the photo.
 
 How to fill in "evidence":
 - water, choose the one that best fits:
@@ -286,6 +296,7 @@ def parse_assessment(
         severity, diy, reasons = assess(obs.evidence)
         assessment = VisualTriageAssessment(
             severity=severity,
+            subject=obs.subject,
             confidence=obs.confidence,
             trade=obs.trade,
             is_safe_for_diy=diy,

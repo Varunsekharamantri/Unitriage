@@ -178,6 +178,17 @@ class TriageNodes:
         """Empty the photo out of the ticket state when it is kept in the database instead."""
         return {"image_b64": ""} if self._clear_image else {}
 
+    def reject_irrelevant(self, state: TicketState) -> dict:
+        """The photo is not a maintenance problem: tell the tenant, open nothing for the owner or a technician."""
+        if state["assessment"].get("subject") == "no_issue_visible":
+            text = ("I can't see a problem in this photo. Could you describe what's wrong, "
+                    "or send a closer photo of the problem?")
+        else:
+            text = ("This doesn't look like a home maintenance issue, so I haven't opened a ticket. "
+                    "If something needs fixing, please send a clear photo of the problem.")
+        self._send("tenant", f"Ticket {state['ticket_id']}: no issue found", text, state)
+        return {"status": "not_a_maintenance_issue"}
+
     def manual_review(self, state: TicketState) -> dict:
         flags = state.get("note_flags") or []
         urgency = state.get("note_urgency", "none")
