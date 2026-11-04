@@ -32,10 +32,11 @@ from app import config  # noqa: E402
 from app.services.imaging import prepare_image  # noqa: E402
 from app.services.vision_service import GeminiProvider, GroqProvider, parse_assessment  # noqa: E402
 
-RANK = {"minor": 0, "major": 1, "emergency": 2}
+RANK = {"irrelevant": -1, "minor": 0, "major": 1, "emergency": 2}
 
 # folder name -> (expected severity, expected is_safe_for_diy)
 FOLDERS = {
+    "not-an-issue": ("irrelevant", False),   # selfies, pets, food, a spotless wall: must not become a ticket
     "minor-diy": ("minor", True),
     "minor-not-diy": ("minor", False),
     "major": ("major", False),
@@ -144,10 +145,11 @@ def main() -> int:
             print(f"  ??  {label}: {exc}")
             continue
         done += 1
-        want, got = case["expect_severity"], a.severity
+        want = case["expect_severity"]
+        got = a.severity if a.subject == "home_issue" else "irrelevant"
         confusion[(want, got)] += 1
         sev_ok += got == want
-        diy_ok += a.is_safe_for_diy == case["expect_diy"]
+        diy_ok += want == "irrelevant" or a.is_safe_for_diy == case["expect_diy"]
         over += RANK[got] > RANK[want]
         under += RANK[got] < RANK[want]
         mark = "ok" if got == want else ("UP" if RANK[got] > RANK[want] else "DN")

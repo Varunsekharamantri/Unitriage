@@ -32,6 +32,7 @@ def build_workflow(
 
     g.add_node("triage", n.triage)
     g.add_node("manual_review", n.manual_review)
+    g.add_node("reject_irrelevant", n.reject_irrelevant)
     g.add_node("dispatch_diy_guide", n.dispatch_diy_guide)
     g.add_node("await_feedback", n.await_feedback)
     g.add_node("close_ticket", n.close_ticket)
@@ -50,9 +51,11 @@ def build_workflow(
             "diy": "dispatch_diy_guide",
             "contractor": "request_technician_rfq",
             "manual_review": "manual_review",
+            "not_relevant": "reject_irrelevant",
         },
     )
     g.add_edge("manual_review", END)
+    g.add_edge("reject_irrelevant", END)
 
     g.add_edge("dispatch_diy_guide", "await_feedback")
     g.add_conditional_edges(
