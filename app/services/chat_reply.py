@@ -44,6 +44,7 @@ _THANKS = re.compile(r"\b(thanks?|thank you|thx|cheers|appreciate)\b", re.I)
 _BYE = re.compile(r"\b(bye|goodbye|see you|that'?s all|that is all|nothing else)\b", re.I)
 _HELLO = re.compile(r"^\s*(hi|hello|hey|namaste|good (morning|afternoon|evening))\b", re.I)
 _DANGER = re.compile(r"\b(gas|fire|smoke|smoking|spark\w*|shock\w*|flood\w*|burst)\b", re.I)
+_STATUS = re.compile(r"\b(when|how long|status|any (news|update)|eta|what time|has (it|anyone)|still waiting|coming)\b", re.I)
 
 
 def fallback(message: str) -> str:
@@ -51,6 +52,8 @@ def fallback(message: str) -> str:
     if _DANGER.search(message):
         return ("Please stay safe and keep clear of it. If anyone is in danger, call your local emergency number. "
                 "If it is safe, send a photo of the problem so I can assess it.")
+    if _STATUS.search(message):
+        return "I'll update you in this chat as soon as there is news."
     if _THANKS.search(message) or _BYE.search(message):
         return "You're welcome! Message me any time something needs fixing."
     if _HELLO.search(message) and len(message.split()) <= 4:
@@ -89,6 +92,25 @@ class ChatResponder:
                 self._health.recovered(provider)
                 return text
         return fallback(message)
+
+
+def respond(responder: Optional["ChatResponder"], message: str, history: Optional[List[dict]] = None,
+            secrets: Sequence[str] = ()) -> str:
+    """The guarded reply: the one entry point the API uses. See app.core.guardrails."""
+    from app.core import guardrails as g
+
+    flags = g.screen_input(message)
+    if flags.refuse:                       # an attack or a probe for codes: no AI is involved at all
+        g.STATS["input_refused"] += 1
+        return g.REFUSAL
+    text = responder.reply(message, history) if responder else fallback(message)
+    why = g.check_reply(text, message, secrets)
+    if why:                                # the AI's reply broke a rule: send the safe fixed one instead
+        g.STATS["reply_blocked:" + why] += 1
+        logger.warning("chat reply blocked (%s)", why)
+        return g.SAFE_DANGER if flags.danger else fallback(message)
+    g.STATS["reply_ok"] += 1
+    return text
 
 
 def build_chat_responder() -> Optional[ChatResponder]:

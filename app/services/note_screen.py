@@ -216,7 +216,7 @@ def build_llm_callers(
                 # Keep the client in a variable: used as a temporary it is closed before the
                 # request is sent ("Cannot send a request, as the client has been closed").
                 client = genai.Client(
-                    api_key=key, http_options=types.HttpOptions(timeout=int((timeout or 15) * 1000)))
+                    api_key=key, http_options=types.HttpOptions(timeout=int(max(timeout or 15, 10) * 1000)))   # Gemini rejects deadlines under 10 s
                 response = client.models.generate_content(
                     model=model, contents=prompt,
                     config=types.GenerateContentConfig(

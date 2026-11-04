@@ -123,6 +123,12 @@ sleep after about 15 minutes idle, and the first request after that takes around
 Evaluation photos live in `evals/images/<folder>/`; the folder name is the expected answer (see
 `evals/images/README.txt`). They are git-ignored because they are third-party images.
 
+## Guardrails and evals
+
+Chat replies are checked by rules before a tenant sees them, requests are rate limited, and calls and
+Sarvam usage have caps. `python evals/run_chat_eval.py` grades the assistant for relevance, safety and
+attack resistance; the offline version runs in `pytest` and CI. See [evals/README.md](evals/README.md).
+
 ## Known limits (demo build)
 
 - Notifications are mocked and the access-code vault is `MockVault`.

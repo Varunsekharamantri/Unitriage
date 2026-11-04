@@ -89,6 +89,11 @@ MAX_IMAGE_BYTES: int = int(os.getenv("MAX_IMAGE_BYTES", str(5 * 1024 * 1024)))
 
 # Voice calls use Sarvam (Indian-English speech to text and text to speech) when a key is set; the
 # key stays on the server. Without one the phone falls back to the browser's own speech.
+# Guardrails for a public demo: per-client request limits, a daily cap on Sarvam calls, and a call time limit.
+RATE_LIMIT_ENABLED: bool = os.getenv("RATE_LIMIT_ENABLED", "true").lower() in ("1", "true", "yes")
+SARVAM_DAILY_LIMIT: int = int(os.getenv("SARVAM_DAILY_LIMIT", "400"))   # speech requests per day, all callers
+CALL_MAX_SECONDS: int = int(os.getenv("CALL_MAX_SECONDS", "600"))        # a call is ended after this long
+CALL_IDLE_SECONDS: int = int(os.getenv("CALL_IDLE_SECONDS", "20"))       # ...or when the caller's phone stops checking in
 SARVAM_API_KEY: str = os.getenv("SARVAM_API_KEY", "")
 SARVAM_TTS_MODEL: str = os.getenv("SARVAM_TTS_MODEL", "bulbul:v3")
 SARVAM_SPEAKER: str = os.getenv("SARVAM_SPEAKER", "priya")

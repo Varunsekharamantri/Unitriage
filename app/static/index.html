@@ -860,7 +860,13 @@ function sarvamListen() {
     try {
       const fd = new FormData(); fd.append("audio", new Blob(chunks, { type: mr.mimeType }), "speech." + (/mp4/.test(mr.mimeType) ? "m4a" : "webm"));
       text = (await api("/api/voice/stt", { method: "POST", body: fd })).transcript || "";
-    } catch (e) { addNote("Could not hear that: " + e.message, true); }
+    } catch (e) {
+      if (/limit|too many/i.test(e.message) && VOICE.SR) {      // out of Sarvam requests: carry on with browser speech
+        VOICE.sarvam = false; showVoice(); addNote("Sarvam's limit is reached for now, so this call switched to browser speech.", false);
+        VOICE.busy = false; setTimeout(listen, 200); return;
+      }
+      addNote("Could not hear that: " + e.message, true);
+    }
     VOICE.busy = false; heard(text);
   };
   mr.start(); callStatus("Listening…");
@@ -905,8 +911,11 @@ async function startCall() {
   try { await callApi("answer"); } catch (_) {}
   VOICE.live = true; VOICE.since = Date.now(); callStatus("Connected");
   VOICE.tick = setInterval(() => { $("callBarText").textContent = "Ongoing voice call · " + mmss(Date.now() - VOICE.since); }, 1000);
-  VOICE.watch = setInterval(async () => {          // the owner can hang up from their phone
-    try { const c = await api("/api/demo/call"); if (c.id !== VOICE.id || c.state !== "active") endCall(false); } catch (_) {}
+  VOICE.watch = setInterval(async () => {          // checks in (so an abandoned call ends), and notices the owner hanging up
+    try {
+      const c = await callApi("ping");
+      if (c.id !== VOICE.id || c.state !== "active") { endCall(false); if (c.state === "ended") addNote("The call ended.", false); }
+    } catch (_) {}
   }, 1500);
   assistantSays(S.unit ? "Hi, this is " + S.cfg.owner_name + "'s assistant. Tell me what's wrong, or send a photo."
                        : "Hi! Which room or unit number are you in?");

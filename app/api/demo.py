@@ -1,4 +1,5 @@
 """Endpoints that exist only for the chat simulator (enabled by DEMO_UI)."""
+import time
 from typing import Literal, Optional
 
 from fastapi import APIRouter, HTTPException, Query, Request
@@ -34,12 +35,23 @@ def messages(
 
 
 class CallAction(BaseModel):
-    action: Literal["start", "answer", "decline", "end"]
+    action: Literal["start", "answer", "decline", "end", "ping"]
     unit: Optional[str] = None
     name: Optional[str] = None
 
 
 IDLE = {"id": 0, "state": "idle", "unit": None, "name": None}
+
+
+def _current(request: Request) -> dict:
+    """The call, ended if it has run too long or its phone has stopped checking in (a closed tab)."""
+    call = getattr(request.app.state, "call", IDLE)
+    if call["state"] in ("ringing", "active"):
+        now = time.time()
+        if now - call.get("started", now) > config.CALL_MAX_SECONDS or now - call.get("seen", now) > config.CALL_IDLE_SECONDS:
+            call = {**call, "state": "ended"}
+            request.app.state.call = call
+    return call
 
 
 @router.get("/call")
@@ -48,14 +60,19 @@ def get_call(request: Request):
 
     state: idle | ringing | active | declined | ended. The owner's phone polls this to show an
     incoming call; the tenant's phone polls it to see whether the owner declined."""
-    return getattr(request.app.state, "call", IDLE)
+    return _current(request)
 
 
 @router.post("/call")
 def post_call(body: CallAction, request: Request):
-    call = getattr(request.app.state, "call", IDLE)
+    call = _current(request)
     if body.action == "start":
-        call = {"id": call["id"] + 1, "state": "ringing", "unit": body.unit, "name": body.name or "Tenant"}
+        now = time.time()
+        call = {"id": call["id"] + 1, "state": "ringing", "unit": body.unit, "name": body.name or "Tenant",
+                "started": now, "seen": now}
+    elif body.action == "ping":
+        if call["state"] in ("ringing", "active"):
+            call = {**call, "seen": time.time()}      # the caller's phone is still there
     elif call["state"] == "idle":
         raise HTTPException(409, "No call in progress")
     elif body.action == "answer" and call["state"] == "ringing":
@@ -80,3 +97,10 @@ def classification(request: Request):
         "accuracy": round((len(checks) - len(wrong)) / len(checks), 2) if checks else None,
         "wrong_cases": wrong,
     }
+
+
+@router.get("/guardrails")
+def guardrail_stats():
+    """How often each guardrail has fired since the server started."""
+    from app.core.guardrails import STATS
+    return dict(STATS)

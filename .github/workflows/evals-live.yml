@@ -1,0 +1,33 @@
+name: Live evals
+
+# Run by hand (Actions tab > Live evals > Run workflow). Calls the real AI providers, so it uses quota.
+# The keys come from the repository's secrets (Settings > Secrets and variables > Actions); they are
+# never written to the repo.
+on:
+  workflow_dispatch:
+    inputs:
+      judge:
+        description: "Also score replies with an LLM judge"
+        type: boolean
+        default: true
+
+jobs:
+  chat-eval:
+    runs-on: ubuntu-latest
+    env:
+      GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+      OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - run: pip install -r requirements.txt
+      - run: python evals/run_chat_eval.py --live ${{ inputs.judge && '--judge' || '' }} --out chat-eval-report.json
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: chat-eval-report
+          path: chat-eval-report.json
