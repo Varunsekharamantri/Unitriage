@@ -25,6 +25,44 @@
   .engine button[aria-pressed="true"] { background: var(--green); color: #fff; }
   .engine button:disabled { opacity: .45; cursor: not-allowed; }
   .engine .hint { color: var(--muted); font-size: 12.5px; }
+
+  /* Scenario: several tenants call at once. A self-contained simulation: it uses nothing from the live phones above. */
+  .scenario { max-width: 1100px; margin: 0 auto; padding: 8px 16px 56px; }
+  .scenario h2 { margin: 0; font-size: 22px; text-align: center; }
+  .scenario > p { margin: 6px auto 0; max-width: 780px; text-align: center; color: var(--muted); }
+  .sc-tag { display: inline-block; background: var(--green); color: #fff; border-radius: 999px; padding: 1px 10px; font-size: 12px; font-weight: 600; margin-right: 6px; }
+  .sc-controls { display: flex; justify-content: center; gap: 10px; margin: 16px 0 6px; }
+  .sc-controls button { border: 0; border-radius: 999px; padding: 8px 20px; font: inherit; font-weight: 600; cursor: pointer; background: var(--green); color: #fff; }
+  .sc-controls button.alt { background: var(--card); color: var(--text); box-shadow: 0 1px 2px rgba(0,0,0,.18); }
+  .sc-controls button:disabled { opacity: .5; cursor: default; }
+  .sc-stage { display: flex; justify-content: center; align-items: flex-start; gap: 34px; flex-wrap: wrap; margin-top: 14px; }
+  .sc-phone { width: 380px; }
+  .sc-phone .who { text-align: center; font-weight: 700; font-size: 15px; margin-bottom: 4px; }
+  .sc-screen { border: 10px solid var(--frame); border-radius: 38px; overflow: hidden; height: 640px; background: var(--card); box-shadow: 0 14px 34px rgba(0,0,0,.28); display: flex; flex-direction: column; }
+  .sc-head { background: var(--green); color: #fff; padding: 14px 16px; font-weight: 700; font-size: 17px; display: flex; justify-content: space-between; align-items: center; flex: none; }
+  .sc-head small { font-weight: 500; opacity: .9; }
+  .sc-banner { background: #f5a524; color: #1a1a1a; padding: 7px 16px; font-size: 13px; font-weight: 600; flex: none; }
+  .sc-body { flex: 1; overflow-y: auto; padding: 10px 12px 14px; }
+  .sc-sec { color: var(--muted); font-size: 12px; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; margin: 10px 4px 6px; }
+  .sc-call { border-radius: 14px; padding: 10px 12px; margin-bottom: 8px; background: var(--bg); display: grid; grid-template-columns: 44px 1fr; gap: 4px 10px; align-items: center; }
+  .sc-call .av { width: 44px; height: 44px; border-radius: 50%; background: var(--frame); display: grid; place-items: center; font-size: 22px; grid-row: span 2; }
+  .sc-call .nm { font-weight: 700; }
+  .sc-call .st { color: var(--muted); font-size: 12.5px; }
+  .sc-call.ringing { box-shadow: inset 0 0 0 2px var(--green); }
+  .sc-call.ringing .av { animation: scring 1.1s infinite; }
+  @keyframes scring { 0%,100% { transform: scale(1); } 50% { transform: scale(1.1); } }
+  .sc-btns { grid-column: 1 / -1; display: flex; gap: 8px; margin-top: 4px; }
+  .sc-btns button { flex: 1; border: 0; border-radius: 999px; padding: 7px 0; font: inherit; font-weight: 600; cursor: pointer; color: #fff; }
+  .sc-btns .acc { background: var(--green); } .sc-btns .dec { background: #e5484d; } .sc-btns .end { background: #e5484d; }
+  .sc-call.done { opacity: .6; }
+  .sc-empty { color: var(--muted); text-align: center; padding: 40px 10px; }
+  .sc-log { width: 380px; }
+  .sc-log h3 { margin: 0 0 8px; font-size: 15px; }
+  .sc-log ol { list-style: none; margin: 0; padding: 0; max-height: 640px; overflow-y: auto; }
+  .sc-log li { background: var(--card); border-radius: 10px; padding: 8px 12px; margin-bottom: 6px; font-size: 13px; box-shadow: 0 1px 2px rgba(0,0,0,.12); }
+  .sc-log li b { color: var(--green); margin-right: 6px; font-variant-numeric: tabular-nums; }
+  .sc-log li.new { outline: 2px solid var(--green); }
+  .sc-note { color: var(--muted); font-size: 12.5px; margin-top: 10px; }
   .stage { display: flex; justify-content: center; align-items: flex-start; gap: 34px; padding: 22px 16px 40px; flex-wrap: wrap; }
   .phone { width: 380px; }
   .phone .who { text-align: center; font-weight: 700; font-size: 15px; margin-bottom: 4px; }
@@ -70,6 +108,30 @@
     <div class="frame"><iframe id="technician" src="/phone?role=technician" title="Technician phone"></iframe></div>
   </section>
 </div>
+
+<section class="scenario" id="scenario" aria-label="Scenario: several tenants call at once">
+  <h2>📞 Scenario: several tenants call the owner at once</h2>
+  <p><span class="sc-tag">Simulation</span>This shows what the property owner's phone would do with parallel calls. It does not use the three live phones above, which are unchanged and still handle one call at a time.</p>
+  <div class="sc-controls">
+    <button id="scPlay">▶ Play scenario</button>
+    <button id="scReset" class="alt">Reset</button>
+  </div>
+  <div class="sc-stage">
+    <div class="sc-phone">
+      <div class="who">🏠 Property Owner (simulated)</div>
+      <div class="sc-screen">
+        <div class="sc-head"><span>Calls</span><small id="scCount">No calls</small></div>
+        <div class="sc-banner" id="scBanner" hidden></div>
+        <div class="sc-body" id="scBody"></div>
+      </div>
+    </div>
+    <div class="sc-log">
+      <h3>What is happening</h3>
+      <ol id="scLog"></ol>
+      <div class="sc-note">You can also tap Accept, Decline or End on the simulated phone yourself. A caller the owner does not answer within 8 seconds is answered by the assistant.</div>
+    </div>
+  </div>
+</section>
 <script>
 /* Which speech engine the tenant's voice call uses. The phones are same-origin iframes, so they read this
    choice from localStorage when a call starts. Sarvam needs a server key; without one it is switched off. */
@@ -88,6 +150,123 @@ document.getElementById("engSarvam").addEventListener("click", () => choose("sar
 document.getElementById("engBrowser").addEventListener("click", () => choose("browser"));
 fetch("/api/voice/status").then((r) => r.json()).then((s) => { sarvamOk = !!s.sarvam; show(); }).catch(show);
 show();
+</script>
+
+<script>
+/* Scenario simulation: its own state and timers, nothing shared with the live phones or the server. */
+(() => {
+  const AUTO_MS = 8000;
+  const CALLERS = [
+    { name: "Priya Sharma", unit: "12B" },
+    { name: "Rahul Verma", unit: "3A" },
+    { name: "Tenant", unit: "5D" },
+  ];
+  let calls = [], log = [], timers = [], t0 = 0, nextId = 1, playing = false;
+  const $ = (id) => document.getElementById(id);
+  const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
+  const clock = (ms) => { const s = Math.floor(ms / 1000); return String(Math.floor(s / 60)).padStart(2, "0") + ":" + String(s % 60).padStart(2, "0"); };
+  const label = (c) => c.name + " (Unit " + c.unit + ")";
+  const say = (text) => { log.push({ at: Date.now() - t0, text }); drawLog(); };
+
+  function incoming(who) {
+    const c = { id: nextId++, ...who, state: "ringing", rang: Date.now(), began: 0 };
+    const others = calls.filter((x) => x.state === "ringing").length;
+    calls.push(c);
+    say(others
+      ? label(c) + " calls while " + others + " other " + (others === 1 ? "call is" : "calls are") + " still ringing. A new card appears; nothing is replaced."
+      : label(c) + " calls. The owner's phone rings.");
+    draw();
+  }
+  function accept(id, by) {
+    const c = calls.find((x) => x.id === id && x.state === "ringing"); if (!c) return;
+    c.state = "active"; c.began = Date.now(); c.by = by;
+    const waiting = calls.filter((x) => x.state === "ringing").length;
+    say(by === "assistant"
+      ? "The owner did not pick up " + label(c) + " in time, so the assistant answers it."
+      : "Owner accepts " + label(c) + "." + (waiting ? " The " + waiting + " other " + (waiting === 1 ? "call keeps" : "calls keep") + " ringing." : ""));
+    draw();
+  }
+  function decline(id) {
+    const c = calls.find((x) => x.id === id && x.state === "ringing"); if (!c) return;
+    c.state = "declined"; say("Owner declines " + label(c) + ". Only that call ends; the rest are unaffected."); draw();
+  }
+  function end(id) {
+    const c = calls.find((x) => x.id === id && x.state === "active"); if (!c) return;
+    c.state = "ended"; c.ended = Date.now();
+    const live = calls.filter((x) => x.state === "active").length;
+    say(label(c) + " hangs up." + (live ? " " + live + " other " + (live === 1 ? "call continues" : "calls continue") + "." : " No calls left."));
+    draw();
+  }
+
+  function card(c) {
+    const box = el("div", "sc-call " + (c.state === "ringing" ? "ringing" : c.state === "active" ? "active" : "done"));
+    box.appendChild(el("div", "av", "🧑"));
+    box.appendChild(el("div", "nm", c.name));
+    const st = c.state === "ringing" ? "Unit " + c.unit + " · ringing · assistant answers in " + Math.max(0, Math.ceil((AUTO_MS - (Date.now() - c.rang)) / 1000)) + "s"
+      : c.state === "active" ? "Unit " + c.unit + " · " + clock(Date.now() - c.began) + " · " + (c.by === "assistant" ? "assistant is talking" : "accepted by owner")
+      : "Unit " + c.unit + " · " + (c.state === "declined" ? "declined" : "ended");
+    box.appendChild(el("div", "st", st));
+    if (c.state === "ringing" || c.state === "active") {
+      const row = el("div", "sc-btns");
+      if (c.state === "ringing") {
+        const d = el("button", "dec", "Decline"); d.addEventListener("click", () => decline(c.id));
+        const a = el("button", "acc", "Accept"); a.addEventListener("click", () => accept(c.id, "owner"));
+        row.append(d, a);
+      } else {
+        const e = el("button", "end", "End call"); e.addEventListener("click", () => end(c.id)); row.appendChild(e);
+      }
+      box.appendChild(row);
+    }
+    return box;
+  }
+  function draw() {
+    const ringing = calls.filter((c) => c.state === "ringing"), active = calls.filter((c) => c.state === "active");
+    const past = calls.filter((c) => c.state === "declined" || c.state === "ended");
+    $("scCount").textContent = calls.length ? ringing.length + " ringing · " + active.length + " active" : "No calls";
+    const banner = $("scBanner");
+    banner.hidden = ringing.length < 2;
+    banner.textContent = ringing.length + " calls waiting";
+    const body = $("scBody"); body.replaceChildren();
+    if (!calls.length) { body.appendChild(el("div", "sc-empty", "No calls yet. Press Play scenario.")); return; }
+    for (const [title, list] of [["Incoming", ringing], ["On a call", active], ["Earlier", past]]) {
+      if (!list.length) continue;
+      body.appendChild(el("div", "sc-sec", title));
+      list.forEach((c) => body.appendChild(card(c)));
+    }
+  }
+  function drawLog() {
+    const ol = $("scLog"); ol.replaceChildren();
+    log.forEach((l, i) => { const li = el("li", i === log.length - 1 ? "new" : ""); li.appendChild(el("b", null, clock(l.at))); li.appendChild(document.createTextNode(l.text)); ol.appendChild(li); });
+    ol.scrollTop = ol.scrollHeight;
+  }
+
+  setInterval(() => {   // the assistant answers a call the owner has left ringing, and the screen counts up
+    const now = Date.now();
+    calls.filter((c) => c.state === "ringing" && now - c.rang >= AUTO_MS).forEach((c) => accept(c.id, "assistant"));
+    if (calls.some((c) => c.state === "ringing" || c.state === "active")) draw();
+  }, 250);
+
+  function reset() {
+    timers.forEach(clearTimeout); timers = []; calls = []; log = []; nextId = 1; playing = false; t0 = Date.now();
+    $("scPlay").disabled = false; draw(); drawLog();
+  }
+  function play() {
+    reset(); playing = true; $("scPlay").disabled = true;
+    const at = (ms, fn) => timers.push(setTimeout(fn, ms));
+    const id = (n) => n;   // calls are numbered in the order they ring
+    at(0, () => incoming(CALLERS[0]));
+    at(1800, () => incoming(CALLERS[1]));
+    at(3500, () => incoming(CALLERS[2]));
+    at(5200, () => accept(id(1), "owner"));
+    at(7500, () => decline(id(3)));
+    at(14500, () => end(id(1)));
+    at(17500, () => end(id(2)));
+    at(19000, () => { say("Each call had its own state, so no call replaced or disturbed another."); $("scPlay").disabled = false; playing = false; });
+  }
+  $("scPlay").addEventListener("click", play);
+  $("scReset").addEventListener("click", reset);
+  reset();
+})();
 </script>
 </body>
 </html>
